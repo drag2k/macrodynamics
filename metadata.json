@@ -1,0 +1,6 @@
+{
+  "name": "MacroDynamics - 환율·금리·통화량 인터랙티브 대시보드",
+  "description": "실질 GDP 성장률과 CPI 물가 좌표계, 3대 전달계(금리·유동성·환율), 2000년 닷컴버블부터 2008 금융위기, 2020 팬데믹, 2024~2026 피벗까지 미국 금융시장 대형 역사적 위기 프리셋 타임라인 PT, 개요 및 상세 브리핑, 실측 데이터와 이론 모델 괴리 분석을 제공하는 거시경제 통합 대시보드",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
