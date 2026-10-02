@@ -23,7 +23,7 @@
 
 ### 1. 레포지토리 복제 및 의존성 설치
 ```bash
-git clone https://github.com/<YOUR_GITHUB_USERNAME>/macrodynamics.git
+git clone https://github.com/drag2k/macrodynamics.git
 cd macrodynamics
 npm install
 ```
@@ -54,23 +54,21 @@ npm start
 
 ## 🌐 Vercel 배포 가이드 (Vercel Deployment)
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdrag2k%2Fmacrodynamics&env=GEMINI_API_KEY)
+
 본 프로젝트는 Vercel 배포를 위한 `vercel.json` 및 Serverless Functions (`/api/*`)를 기본 내장하고 있습니다.
 
-### 방법 1: Vercel CLI로 1-Click 배포
-```bash
-npm i -g vercel
-vercel
-```
+### 방법 1: 1-Click 웹 배포 (가장 빠르고 간편함)
+위의 **[Deploy with Vercel]** 버튼을 클릭하거나 [Vercel Clone 링크](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdrag2k%2Fmacrodynamics&env=GEMINI_API_KEY)에 접속하여 `GEMINI_API_KEY`만 입력하면 즉시 배포됩니다.
 
 ### 방법 2: GitHub 연동 웹 대시보드 배포
-1. 본 레포지토리를 GitHub에 푸시합니다.
-2. [Vercel 대시보드](https://vercel.com/new)에서 **Import Git Repository**를 선택합니다.
-3. Framework Preset: **Vite**
-4. Root Directory: `./` (기본값)
-5. **Environment Variables (환경 변수)** 설정:
+1. [Vercel 대시보드](https://vercel.com/new)에서 **`drag2k/macrodynamics`** 저장소를 선택(Import)합니다.
+2. Framework Preset: **Vite** (자동 감지)
+3. Root Directory: `./` (기본값)
+4. **Environment Variables (환경 변수)** 설정:
    - Key: `GEMINI_API_KEY`
    - Value: `사용자의 Google Gemini API 키`
-6. **Deploy** 버튼을 클릭하면 배포가 완료됩니다!
+5. **Deploy** 버튼을 클릭하면 배포가 완료됩니다!
 
 ---
 
