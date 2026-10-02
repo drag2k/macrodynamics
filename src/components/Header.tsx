@@ -6,6 +6,7 @@ import {
   Presentation
 } from 'lucide-react';
 import { APP_VERSION } from '../version';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   onOpenFactCheckModal: () => void;
@@ -45,6 +46,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Action buttons */}
           <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* PWA App Install Button */}
+            <PWAInstallButton />
+
             {/* Fact Check Modal Button */}
             <button
               onClick={onOpenFactCheckModal}

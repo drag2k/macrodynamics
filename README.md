@@ -1,8 +1,8 @@
-# MacroDynamics (v1.0.2)
+# MacroDynamics (v1.0.3)
 
-> **글로벌 금리·유동성·환율 연동 거시경제 시뮬레이터 & 시계열 퀀트 분석 플랫폼**  
+> **글로벌 금리·유동성·환율 연동 거시경제 시뮬레이터 & 시계열 퀀트 분석 플랫폼 (PWA 지원)**  
 > **Designed & Developed by pandw Lee** (`pandw2k@gmail.com`)  
-> **Release Version**: `v1.0.2` (2026.10)
+> **Release Version**: `v1.0.3` (2026.10)
 
 ---
 
