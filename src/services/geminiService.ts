@@ -13,6 +13,7 @@ export interface GeminiMacroFetchResponse {
   baseDateStr?: string;
   sources?: Array<{ title: string; url: string }>;
   rawSummary?: string;
+  notice?: string;
   error?: string;
 }
 

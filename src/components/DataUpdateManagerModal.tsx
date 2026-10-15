@@ -62,6 +62,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
     isNewMonth?: boolean;
     sources?: Array<{ title: string; url: string }>;
     rawSummary?: string;
+    notice?: string;
     error?: string;
   } | null>(null);
 
@@ -431,7 +432,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                     <div className="flex items-center gap-2 flex-wrap text-[10px]">
                       <span className="text-slate-400 flex items-center gap-1">
                         <ExternalLink className="w-3 h-3 text-cyan-400" />
-                        <span>검색 출처:</span>
+                        <span>데이터 출처:</span>
                       </span>
                       {geminiResult.sources.map((s, idx) => (
                         <a
@@ -439,11 +440,18 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                           href={s.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 hover:text-cyan-200 transition truncate max-w-[180px]"
+                          className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 hover:text-cyan-200 transition truncate max-w-[220px]"
                         >
                           {s.title}
                         </a>
                       ))}
+                    </div>
+                  )}
+
+                  {geminiResult.notice && (
+                    <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/50 text-[10px] text-cyan-200 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span>{geminiResult.notice}</span>
                     </div>
                   )}
 
@@ -496,6 +504,13 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {geminiResult.notice && (
+                    <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/50 text-[10px] text-cyan-200 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span>{geminiResult.notice}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
