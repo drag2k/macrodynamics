@@ -82,31 +82,21 @@ export const generateLlmDataPrompt = (targetYear: number, targetMonth: number): 
 
   return `[거시경제 최신 데이터 수집 및 정형화 요청]
 
-당신은 거시경제 퀀트 분석가입니다. 
-웹 검색 및 최신 금융/경제 데이터베이스를 조회하여 **${targetYear}년 ${targetMonth}월 (${targetDateStr})**의 미국 및 한국의 실제(또는 최신 추정) 거시경제 지표를 조사하고, 아래의 JSON 객체 형식 하나만을 정확하게 출력해 주세요. 마크다운 따옴표(\`\`\`json) 안에 JSON만 작성해야 하며 다른 서론이나 결론 문장은 제외해 주세요.
+당신은 금융시장 및 거시경제 공인 데이터 분석가입니다. 
+웹 검색 및 최신 금융/경제 데이터베이스(FRED, 한국은행, BLS, 거래소 등)를 조회하여 **${targetYear}년 ${targetMonth}월 (${targetDateStr})**의 미국 및 한국의 실제(또는 최신 추정) 거시경제 공식 지표를 조사하고, 아래의 JSON 객체 형식 하나만을 정확하게 출력해 주세요.
 
-■ 조사 및 입력 지표 지침:
-1. dateStr: "${targetDateStr}" (형식: "YYYY.MM")
-2. id: "${targetId}"
-3. year: ${targetYear}, month: ${targetMonth}, label: "${targetLabel}"
-4. fedRate: 미국 기준금리 (상단 기준 %, 예: 4.25)
-5. usdkrw: 원/달러 마감 환율 (원, 예: 1415)
-6. netLiquidity: 연준 순유동성(총자산 - TGA - RRP) ($T 조 달러, 예: 7.05)
-7. treasury10Y: 미국 국채 10년물 마감 수익률 (%, 예: 4.55)
-8. sp500Index: 미국 S&P 500 마감 지수 (포인트, 예: 6950)
-9. kospiIndex: 한국 KOSPI 마감 지수 (포인트, 예: 2880)
-10. cpiInflation: 미국 헤드라인 CPI 전년비(YoY) 상승률 (%, 예: 3.1)
-11. realGdp: 미국 실질 GDP 전기비 연율 성장률 (%, 예: 1.8)
-12. quadrant: 당시 거시 사분면 (다음 4개 중 정확히 하나 선택: "GOLDILOCKS" | "REFLATION" | "STAGFLATION" | "DEFLATION_RECESSION")
-13. growthScore: 경기 체감 점수 (-100 침체 ~ +100 호황, 예: -5)
-14. inflationScore: 물가 압력 점수 (-100 디플레 ~ +100 고인플레, 예: 35)
-15. goldPrice: 국제 금 시세 ($/oz, 예: 2860)
-16. bitcoinPrice: 비트코인 시세 ($K 천 달러, 예: 125.5)
-17. phaseTitle: 이 달의 가장 결정적인 연준 정책 및 거시 사건 한 줄 요약 (한국어 30자 이내)
-18. marketNote: 자산 시장의 실제 반응 및 원인 해설 (한국어 1~2문장)
-19. theoreticalComparison: 전통 경제학/교과서 이론과 실제 시장 반응 간의 차이점 및 교훈 (한국어 1~2문장)
+■ 지표 입력 기준 및 주의사항:
+1. **지수 명칭 구분 (혼동 금지)**:
+   - **kospiIndex (한국 KOSPI 종합주가지수)**: 현재 실측 2,500~2,750pt 내외 (역대 최고 3,316pt). 절대 3,500을 넘지 않음.
+   - **sp500Index (미국 S&P 500 지수)**: 최근 6,000pt 돌파 (5,800~6,100pt 범위).
+2. **fedRate**: 미국 연준 기준금리 상단 (실제 결정 수치, 예: 4.50 또는 4.75)
+3. **usdkrw**: 원/달러 마감 환율 (서울외환시장 실측, 예: 1395)
+4. **treasury10Y**: 미국 국채 10년물 수익률 (실측 %, 예: 4.35)
+5. **cpiInflation**: 미국 헤드라인 CPI 전년비(YoY) 상승률 (%)
+6. **realGdp**: 미국 실질 GDP 전기비 연율 성장률 (%)
+7. **quadrant**: 거시 사분면 ("GOLDILOCKS" | "REFLATION" | "STAGFLATION" | "DEFLATION_RECESSION")
 
-■ 출력 JSON 템플릿 (반드시 이 키 이름을 엄수):
+■ 출력 JSON 템플릿:
 \`\`\`json
 {
   "id": "${targetId}",
@@ -114,22 +104,22 @@ export const generateLlmDataPrompt = (targetYear: number, targetMonth: number): 
   "year": ${targetYear},
   "month": ${targetMonth},
   "label": "${targetLabel}",
-  "phaseTitle": "연준 25bp 재인상 충격 후 금융시장 반응 요약",
-  "quadrant": "STAGFLATION",
-  "realGdp": 1.9,
-  "cpiInflation": 3.1,
-  "growthScore": -5,
-  "inflationScore": 35,
-  "fedRate": 4.25,
-  "netLiquidity": 7.02,
-  "usdkrw": 1418,
-  "sp500Index": 6930,
-  "kospiIndex": 2870,
-  "treasury10Y": 4.56,
-  "goldPrice": 2865,
-  "bitcoinPrice": 125.0,
-  "marketNote": "기준금리 재인상 여파로 장기 국채금리가 상승하고 강달러가 재개되며 위험자산이 조정을 받음.",
-  "theoreticalComparison": "조기 완화 후 발생한 2차 인플레로 인해 인하 사이클이 역전될 때 채권 듀레이션 리스크가 극대화됨을 실증."
+  "phaseTitle": "거시경제 및 금융시장 핵심 동향 요약",
+  "quadrant": "GOLDILOCKS",
+  "realGdp": 2.1,
+  "cpiInflation": 2.7,
+  "growthScore": 10,
+  "inflationScore": 5,
+  "fedRate": 4.50,
+  "netLiquidity": 7.05,
+  "usdkrw": 1395,
+  "sp500Index": 5980,
+  "kospiIndex": 2650,
+  "treasury10Y": 4.35,
+  "goldPrice": 2750,
+  "bitcoinPrice": 95.0,
+  "marketNote": "주요 자산 시장의 실시간 반응과 펀더멘털 요인 해설",
+  "theoreticalComparison": "전통 경제학 이론 대비 실제 시장의 움직임 비교 분석"
 }
 \`\`\``;
 };

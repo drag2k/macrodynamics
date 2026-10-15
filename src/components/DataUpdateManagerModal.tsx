@@ -18,7 +18,10 @@ import {
   FileCode,
   ShieldCheck,
   TrendingUp,
-  Clock
+  Info,
+  Edit3,
+  Save,
+  HelpCircle
 } from 'lucide-react';
 import { MonthlyMacroTimeSeriesPoint } from '../data/monthlyMacroTimeSeries';
 import { 
@@ -66,6 +69,10 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
     error?: string;
   } | null>(null);
 
+  // Editable point state (Allows user to inspect & edit numbers before or after saving)
+  const [editablePoint, setEditablePoint] = useState<MonthlyMacroTimeSeriesPoint | null>(null);
+  const [isSavedNotice, setIsSavedNotice] = useState<string>('');
+
   // Advanced Prompt / Paste State
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
   const [pasteInput, setPasteInput] = useState<string>('');
@@ -81,13 +88,20 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
     return getActiveRecentSeries().length;
   }, [customPointsList]);
 
+  // Check if any post-2026.09 data is currently saved in custom points
+  const hasPostSeptember2026Point = useMemo(() => {
+    return customPointsList.some(p => p.dateStr >= '2026.10' || p.id.includes('2026-10'));
+  }, [customPointsList]);
+
   if (!isOpen) return null;
 
-  // Fully automated check & update: zero date-picking required!
+  // Fully automated check & update
   const handleRunAutoUpdate = async () => {
     setCheckStatus('CHECKING');
     setProgressStep(1);
     setGeminiResult(null);
+    setEditablePoint(null);
+    setIsSavedNotice('');
 
     try {
       // Step 1: Analyze current timeline state
@@ -104,8 +118,9 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
       }
 
       setGeminiResult(res);
+      setEditablePoint({ ...res.data });
 
-      // Automatically save and sync!
+      // Automatically store in custom points with instant sync
       saveCustomPoint(res.data);
       const updatedList = getStoredCustomPoints();
       setCustomPointsList(updatedList);
@@ -124,6 +139,29 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
         error: err.message || '최신 데이터 확인 중 통신 오류가 발생했습니다.'
       });
     }
+  };
+
+  // Save manual modifications made to editablePoint
+  const handleSaveEditablePoint = () => {
+    if (!editablePoint) return;
+    saveCustomPoint(editablePoint);
+    const updated = getStoredCustomPoints();
+    setCustomPointsList(updated);
+    onDataUpdated();
+    setIsSavedNotice(`✓ [${editablePoint.dateStr}] 수정된 지표가 타임라인에 안전하게 반영되었습니다!`);
+    setTimeout(() => setIsSavedNotice(''), 3500);
+  };
+
+  // Instant Rollback: Delete any 2026.10 or future points
+  const handlePurgeNewerPoints = () => {
+    const filtered = customPointsList.filter(p => !(p.dateStr >= '2026.10' || p.id.includes('2026-10')));
+    localStorage.setItem('macro_custom_monthly_points_v1', JSON.stringify(filtered));
+    setCustomPointsList(filtered);
+    setEditablePoint(null);
+    setCheckStatus('IDLE');
+    setSaveSuccessNotice('✓ 2026.10 데이터가 삭제되고 2026.09 원본 타임라인으로 복구되었습니다.');
+    onDataUpdated();
+    setTimeout(() => setSaveSuccessNotice(''), 4000);
   };
 
   // Helper for prompt copy
@@ -175,6 +213,8 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
     if (window.confirm('추가된 모든 사용자 데이터를 삭제하고 기본 33개월 데이터셋으로 초기화하시겠습니까?')) {
       resetCustomPoints();
       setCustomPointsList([]);
+      setEditablePoint(null);
+      setCheckStatus('IDLE');
       onDataUpdated();
     }
   };
@@ -192,14 +232,14 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-extrabold text-white tracking-tight">
-                  최신 거시경제 데이터 자동 동기화 센터
+                  최신 거시경제 데이터 동기화 및 검증 센터
                 </h2>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700/50">
-                  AI 자동 판별
+                  실측 데이터 검증
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                날짜를 직접 고를 필요 없이, 앱이 글로벌 시장 발표 데이터를 자동 확인하여 즉시 동기화합니다.
+                글로벌 시장의 공식 발표 지표를 확인하고, 이상 수치는 직접 수정하여 타임라인에 정확히 반영합니다.
               </p>
             </div>
           </div>
@@ -213,6 +253,28 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
           </button>
         </div>
 
+        {/* Global Alert Banner: 2026.10 Rollback if exists */}
+        {hasPostSeptember2026Point && (
+          <div className="px-5 py-2.5 bg-amber-950/60 border-b border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-amber-200">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+              <div>
+                <span className="font-bold">2026.10 추가 데이터 감지:</span>
+                <span className="text-[11px] text-amber-300/90 ml-1.5">
+                  수치가 불명확하거나 마음에 들지 않으면 즉시 삭제하여 원본 2026.09 기준점으로 원복할 수 있습니다.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handlePurgeNewerPoints}
+              className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition cursor-pointer flex items-center gap-1 shrink-0"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>2026.10 즉시 삭제 / 롤백</span>
+            </button>
+          </div>
+        )}
+
         {/* Tab Navigation Strip */}
         <div className="flex items-center gap-1 px-5 pt-3 border-b border-slate-800/80 bg-slate-950/40">
           <button
@@ -224,7 +286,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
             }`}
           >
             <Bot className="w-3.5 h-3.5 text-cyan-400" />
-            <span>최신 데이터 자동 업데이트</span>
+            <span>최신 데이터 점검 및 편집</span>
           </button>
 
           <button
@@ -255,10 +317,44 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
         {/* Modal Main Body */}
         <div className="p-5 flex-1 overflow-y-auto space-y-4">
           
-          {/* TAB 1: FULLY AUTOMATED 1-CLICK UPDATE */}
+          {/* TAB 1: AUTO UPDATE & DIRECT REVIEW/EDIT */}
           {activeTab === 'AUTO_UPDATE' && (
             <div className="space-y-4">
               
+              {/* Macro Benchmark & Distinction Guidance Card */}
+              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                  <Info className="w-4 h-4 text-cyan-400" />
+                  <span>핵심 금융시장 지표 기준 및 명칭 안내</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
+                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                    <strong className="text-white block font-mono">한국 KOSPI 지수 (kospiIndex)</strong>
+                    <span className="text-slate-400">
+                      실측 <strong>2,500 ~ 2,750pt</strong> 내외 (역사상 최고점 3,316pt). 6,000pt는 KOSPI가 아닌 미국 S&P 500에 해당합니다.
+                    </span>
+                  </div>
+                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                    <strong className="text-white block font-mono">미국 S&P 500 지수 (sp500Index)</strong>
+                    <span className="text-slate-400">
+                      최근 사상 최초로 <strong>6,000pt 돌파</strong> (실측 5,800 ~ 6,100pt 범위).
+                    </span>
+                  </div>
+                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                    <strong className="text-white block font-mono">미국 연준 기준금리 (fedRate)</strong>
+                    <span className="text-slate-400">
+                      FOMC 공식 결정 기준금리 상단 (2024년 말~2025년 완화 사이클 <strong>4.50% ~ 4.75%</strong>).
+                    </span>
+                  </div>
+                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                    <strong className="text-white block font-mono">원/달러 환율 (usdkrw)</strong>
+                    <span className="text-slate-400">
+                      서울외환시장 실측 종가 기준 (통상 <strong>1,380 ~ 1,440원대</strong>).
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Automated Diagnosis Status Card */}
               <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
@@ -267,7 +363,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                     <span>시스템 시계열 데이터베이스 진단 상태</span>
                   </div>
                   <span className="text-[11px] text-slate-400 font-mono">
-                    실시간 Google Search Grounding 연결
+                    Google Search / FRED 연동
                   </span>
                 </div>
 
@@ -288,26 +384,26 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                   <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800/80 space-y-1">
                     <span className="text-[11px] text-slate-400 flex items-center gap-1">
                       <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>글로벌 시장 모니터링</span>
+                      <span>시장 지표 점검</span>
                     </span>
                     <p className="text-sm font-bold text-emerald-300">
-                      정상 가동 중
+                      상시 모니터링
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      연준 FOMC, 환율, 국채, CPI, GDP
+                      연준 FOMC, 환율, 국채, CPI, KOSPI
                     </p>
                   </div>
 
                   <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800/80 space-y-1">
                     <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                      <Bot className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>업데이트 판별 방식</span>
+                      <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>수치 검증 및 편집</span>
                     </span>
                     <p className="text-sm font-bold text-cyan-300">
-                      100% 전자동 판별
+                      사용자 직접 수정 가능
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      신규 발표 시 타임라인 즉시 연장
+                      모든 지표 직접 입력 및 검증 지원
                     </p>
                   </div>
                 </div>
@@ -318,10 +414,10 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="space-y-0.5">
                     <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
-                      <span>최신 발표 데이터 자동 점검 및 업데이트</span>
+                      <span>최신 발표 데이터 자동 점검 및 조회</span>
                     </h3>
                     <p className="text-[11px] text-slate-300 leading-relaxed">
-                      별도 날짜 지정 없이 버튼을 누르면, 시스템이 실시간 발표된 최신 거시경제 지표 유무를 확인하여 자동으로 타임라인에 반영합니다.
+                      버튼을 누르면 공식 발표 지표 유무를 확인하여 가져옵니다. 수집 후 아래 편집판에서 원하는 값으로 직접 수정할 수 있습니다.
                     </p>
                   </div>
 
@@ -333,18 +429,18 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                     {checkStatus === 'CHECKING' ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                        <span>실시간 확인 및 수집 중...</span>
+                        <span>공식 지표 점검 및 수집 중...</span>
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 text-slate-950" />
-                        <span>⚡ 최신 데이터 확인 및 업데이트 실행</span>
+                        <span>⚡ 최신 데이터 점검 및 수집 실행</span>
                       </>
                     )}
                   </button>
                 </div>
 
-                {/* Progress Animation Bar when CHECKING */}
+                {/* Progress Animation Bar */}
                 {checkStatus === 'CHECKING' && (
                   <div className="mt-3 p-3 rounded-lg bg-slate-950/80 border border-cyan-500/40 space-y-2 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between text-[11px]">
@@ -352,8 +448,8 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                         <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
                         <span>
                           {progressStep === 1 && `현재 타임라인 최종 기준점(${latestDateStr}) 검사 완료`}
-                          {progressStep === 2 && 'Google Search Grounding으로 최신 연준 금리 및 거시 지표 조회 중...'}
-                          {progressStep === 3 && '신규 지표 발표 유무 판별 및 19개 필드 정합성 검증 중...'}
+                          {progressStep === 2 && 'Google Search / FRED 연동으로 최신 공시 지표 조회 중...'}
+                          {progressStep === 3 && '지표 무결성 검증 및 입력판 준비 중...'}
                         </span>
                       </span>
                       <span className="text-slate-400 font-mono">{progressStep}/3 단계</span>
@@ -368,68 +464,183 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                 )}
               </div>
 
-              {/* SUCCESS RESULTS: Case A - New Month Discovered & Added */}
-              {checkStatus === 'SUCCESS_NEW' && geminiResult?.data && (
-                <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-3 animate-in zoom-in-95 duration-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>🎉 신규 최신 데이터 [{geminiResult.data.dateStr}] 발견 및 타임라인 자동 반영 완료!</span>
+              {/* INLINE EDIT & REVIEW PANEL (Shows when data is retrieved or being edited) */}
+              {editablePoint && (
+                <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/50 space-y-4 animate-in zoom-in-95 duration-200">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Edit3 className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <h4 className="text-xs font-bold text-white">
+                        [{editablePoint.dateStr}] 거시경제 지표 검증 및 인라인 편집판
+                      </h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-900/60 text-emerald-300 border border-emerald-700/50">
-                      신규 월 추가됨
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-700/50">
+                      수치 직접 수정 가능
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-slate-300">
-                    공식 발표된 새로운 거시경제 지표가 확인되어 타임라인에 성공적으로 추가되었습니다.
-                  </p>
-
-                  {/* Summary Metric Board */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">연준 기준금리</span>
-                      <span className="text-sm font-extrabold text-cyan-300 font-mono">{geminiResult.data.fedRate}%</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">원/달러 환율</span>
-                      <span className="text-sm font-extrabold text-cyan-300 font-mono">{geminiResult.data.usdkrw.toLocaleString()}원</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">미 국채 10년물</span>
-                      <span className="text-sm font-extrabold text-amber-300 font-mono">{geminiResult.data.treasury10Y}%</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">미국 헤드라인 CPI</span>
-                      <span className="text-sm font-extrabold text-rose-300 font-mono">{geminiResult.data.cpiInflation}%</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">S&P 500 지수</span>
-                      <span className="text-sm font-bold text-white font-mono">{geminiResult.data.sp500Index.toLocaleString()}</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">KOSPI 지수</span>
-                      <span className="text-sm font-bold text-white font-mono">{geminiResult.data.kospiIndex.toLocaleString()}</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">거시 사분면</span>
-                      <span className="text-xs font-bold text-emerald-400">{geminiResult.data.quadrant}</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">실질 GDP 성장률</span>
-                      <span className="text-sm font-bold text-white font-mono">{geminiResult.data.realGdp}%</span>
-                    </div>
-                  </div>
-
-                  {geminiResult.data.phaseTitle && (
-                    <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-300">
-                      <strong className="text-cyan-300">핵심 사건 요약:</strong> {geminiResult.data.phaseTitle}
+                  {isSavedNotice && (
+                    <div className="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{isSavedNotice}</span>
                     </div>
                   )}
 
-                  {/* Sources Strip */}
-                  {geminiResult.sources && geminiResult.sources.length > 0 && (
-                    <div className="flex items-center gap-2 flex-wrap text-[10px]">
+                  {/* Inline Edit Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                    
+                    {/* Fed Rate */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
+                        <span>미국 연준 기준금리 (%)</span>
+                        <span className="text-cyan-400 font-mono">FOMC 상단</span>
+                      </label>
+                      <input 
+                        type="number"
+                        step="0.25"
+                        value={editablePoint.fedRate}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, fedRate: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-cyan-300 font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* USD/KRW */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
+                        <span>원/달러 환율 (원)</span>
+                        <span className="text-cyan-400 font-mono">서울외환시장</span>
+                      </label>
+                      <input 
+                        type="number"
+                        step="1"
+                        value={editablePoint.usdkrw}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, usdkrw: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-cyan-300 font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* Treasury 10Y */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
+                        <span>미 국채 10년물 수익률 (%)</span>
+                        <span className="text-amber-400 font-mono">FRED</span>
+                      </label>
+                      <input 
+                        type="number"
+                        step="0.01"
+                        value={editablePoint.treasury10Y}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, treasury10Y: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-amber-300 font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* CPI Inflation */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
+                        <span>미국 헤드라인 CPI YoY (%)</span>
+                        <span className="text-rose-400 font-mono">BLS</span>
+                      </label>
+                      <input 
+                        type="number"
+                        step="0.1"
+                        value={editablePoint.cpiInflation}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, cpiInflation: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-rose-300 font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* S&P 500 Index */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
+                        <span>미국 S&P 500 마감 지수 (pt)</span>
+                        <span className="text-emerald-400 font-mono">~6,000선</span>
+                      </label>
+                      <input 
+                        type="number"
+                        step="10"
+                        value={editablePoint.sp500Index}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, sp500Index: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* KOSPI Index */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
+                        <span>한국 KOSPI 마감 지수 (pt)</span>
+                        <span className="text-cyan-400 font-mono">~2,600선</span>
+                      </label>
+                      <input 
+                        type="number"
+                        step="10"
+                        value={editablePoint.kospiIndex}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, kospiIndex: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* Real GDP */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400">
+                        미국 실질 GDP 연율 (%)
+                      </label>
+                      <input 
+                        type="number"
+                        step="0.1"
+                        value={editablePoint.realGdp}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, realGdp: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* Quadrant */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400">
+                        거시 사분면 (Quadrant)
+                      </label>
+                      <select 
+                        value={editablePoint.quadrant}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, quadrant: e.target.value as MacroQuadrant })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-cyan-300 text-xs focus:outline-none focus:border-cyan-400"
+                      >
+                        <option value="GOLDILOCKS">GOLDILOCKS (골디락스 - 고성장/저물가)</option>
+                        <option value="REFLATION">REFLATION (리플레이션 - 고성장/고물가)</option>
+                        <option value="STAGFLATION">STAGFLATION (스태그플레이션 - 저성장/고물가)</option>
+                        <option value="DEFLATION_RECESSION">DEFLATION_RECESSION (디플레/침체)</option>
+                      </select>
+                    </div>
+
+                    {/* Net Liquidity */}
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400">
+                        연준 순유동성 ($T 조 달러)
+                      </label>
+                      <input 
+                        type="number"
+                        step="0.05"
+                        value={editablePoint.netLiquidity}
+                        onChange={(e) => setEditablePoint({ ...editablePoint, netLiquidity: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono text-sm focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phase Title Edit */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 block">
+                      이 달의 핵심 사건 및 통화정책 요약
+                    </label>
+                    <input 
+                      type="text"
+                      value={editablePoint.phaseTitle}
+                      onChange={(e) => setEditablePoint({ ...editablePoint, phaseTitle: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+
+                  {/* Sources info */}
+                  {geminiResult?.sources && geminiResult.sources.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap text-[10px] pt-1">
                       <span className="text-slate-400 flex items-center gap-1">
                         <ExternalLink className="w-3 h-3 text-cyan-400" />
                         <span>데이터 출처:</span>
@@ -440,7 +651,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                           href={s.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 hover:text-cyan-200 transition truncate max-w-[220px]"
+                          className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 hover:text-cyan-200 transition truncate max-w-[260px]"
                         >
                           {s.title}
                         </a>
@@ -448,77 +659,33 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                     </div>
                   )}
 
-                  {geminiResult.notice && (
-                    <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/50 text-[10px] text-cyan-200 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      <span>{geminiResult.notice}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-end gap-2 pt-1">
+                  {/* Actions Strip */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800">
                     <button
-                      onClick={onClose}
-                      className="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-950/40"
+                      onClick={handlePurgeNewerPoints}
+                      className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-700/50 text-rose-300 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                     >
-                      <span>타임라인에서 확인하기</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>이 데이터 삭제 및 롤백</span>
                     </button>
-                  </div>
-                </div>
-              )}
 
-              {/* SUCCESS RESULTS: Case B - Already Up To Date */}
-              {checkStatus === 'SUCCESS_UP_TO_DATE' && geminiResult?.data && (
-                <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/40 space-y-3 animate-in zoom-in-95 duration-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                      <span>✅ 현재 데이터베이스({geminiResult.data.dateStr})가 이미 가장 최신 상태입니다!</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSaveEditablePoint}
+                        className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs transition cursor-pointer flex items-center gap-1.5 shadow-lg shadow-cyan-950/50"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>수정값 타임라인에 저장 및 적용</span>
+                      </button>
+
+                      <button
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer flex items-center gap-1.5 shadow-lg shadow-emerald-950/50"
+                      >
+                        <span>타임라인으로 이동</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950/80 text-cyan-300 border border-cyan-700/50">
-                      최신 상태 유지 중
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
-                    글로벌 시장의 최신 공시 지표를 점검한 결과, 현재 등록된 마지막 시점(<strong>{geminiResult.data.dateStr}</strong>)이 현재까지 공식 확정된 가장 최신 데이터입니다. (차월 지표는 공식 릴리즈 일정에 따라 발표되는 즉시 다시 자동으로 추가됩니다.)
-                  </p>
-
-                  <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1.5 text-xs">
-                    <div className="text-slate-400 text-[11px] flex items-center justify-between">
-                      <span>검증된 최신 지표 마감치:</span>
-                      <span className="text-cyan-300 font-mono">기준: {geminiResult.data.dateStr}</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                      <div className="text-slate-300 text-[11px]">
-                        연준 금리: <strong className="text-cyan-300 font-mono">{geminiResult.data.fedRate}%</strong>
-                      </div>
-                      <div className="text-slate-300 text-[11px]">
-                        환율: <strong className="text-cyan-300 font-mono">{geminiResult.data.usdkrw}원</strong>
-                      </div>
-                      <div className="text-slate-300 text-[11px]">
-                        10년물 국채: <strong className="text-amber-300 font-mono">{geminiResult.data.treasury10Y}%</strong>
-                      </div>
-                      <div className="text-slate-300 text-[11px]">
-                        CPI 인플레이션: <strong className="text-rose-300 font-mono">{geminiResult.data.cpiInflation}%</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {geminiResult.notice && (
-                    <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/50 text-[10px] text-cyan-200 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      <span>{geminiResult.notice}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
-                      onClick={onClose}
-                      className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
-                    >
-                      확인 완료 (닫기)
-                    </button>
                   </div>
                 </div>
               )}
@@ -552,23 +719,41 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
           {/* TAB 2: STORED CUSTOM DATA MANAGEMENT */}
           {activeTab === 'CUSTOM_STORAGE' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs gap-2">
                 <div>
                   <h4 className="font-bold text-white">추가된 사용자 데이터 목록 ({customPointsList.length}건)</h4>
                   <p className="text-[11px] text-slate-400">
-                    AI 자동 수집 또는 직접 입력하여 타임라인에 누적된 데이터 목록입니다.
+                    사용자가 직접 입력하거나 자동 수집하여 타임라인에 누적된 데이터입니다.
                   </p>
                 </div>
-                {customPointsList.length > 0 && (
-                  <button
-                    onClick={handleResetAll}
-                    className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-600/40 text-rose-300 font-bold transition flex items-center gap-1.5 cursor-pointer text-xs"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>전체 초기화 (기본 복귀)</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {hasPostSeptember2026Point && (
+                    <button
+                      onClick={handlePurgeNewerPoints}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold transition flex items-center gap-1.5 cursor-pointer text-xs"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>2026.10 롤백</span>
+                    </button>
+                  )}
+                  {customPointsList.length > 0 && (
+                    <button
+                      onClick={handleResetAll}
+                      className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-600/40 text-rose-300 font-bold transition flex items-center gap-1.5 cursor-pointer text-xs"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>전체 초기화 (기본 복귀)</span>
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {saveSuccessNotice && (
+                <div className="p-3 rounded-xl bg-emerald-950/50 border border-emerald-500/50 text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  <span>{saveSuccessNotice}</span>
+                </div>
+              )}
 
               {customPointsList.length === 0 ? (
                 <div className="py-12 px-4 rounded-xl bg-slate-950/40 border border-slate-800/80 text-center space-y-2">
@@ -577,7 +762,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                     추가된 사용자 정의 월별 데이터가 없습니다.
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    [최신 데이터 자동 업데이트] 탭에서 원클릭으로 최신 거시경제 데이터를 추가해 보세요.
+                    현재 기본 33개월 고해상도 시계열 데이터셋이 깔끔하게 유지되고 있습니다.
                   </p>
                 </div>
               ) : (
@@ -593,6 +778,11 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
                             {pt.quadrant}
                           </span>
+                          {pt.dateStr >= '2026.10' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700/50">
+                              최신 추가월
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
                           <span>금리: <strong className="text-white">{pt.fedRate}%</strong></span>
@@ -600,16 +790,29 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                           <span>10년물: <strong className="text-white">{pt.treasury10Y}%</strong></span>
                           <span>CPI: <strong className="text-white">{pt.cpiInflation}%</strong></span>
                           <span>S&P: <strong className="text-white">{pt.sp500Index}</strong></span>
+                          <span>KOSPI: <strong className="text-white">{pt.kospiIndex}</strong></span>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleDeleteCustomPoint(pt.id)}
-                        className="p-2 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 transition cursor-pointer shrink-0"
-                        title="이 월 데이터 삭제"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => {
+                            setEditablePoint({ ...pt });
+                            setActiveTab('AUTO_UPDATE');
+                          }}
+                          className="p-2 rounded-lg bg-slate-800 hover:bg-cyan-950 text-slate-400 hover:text-cyan-300 transition cursor-pointer"
+                          title="이 데이터 수정하기"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCustomPoint(pt.id)}
+                          className="p-2 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                          title="이 월 데이터 삭제"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -666,7 +869,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                 <textarea
                   value={pasteInput}
                   onChange={(e) => setPasteInput(e.target.value)}
-                  placeholder={`{\n  "id": "2026-10",\n  "dateStr": "2026.10",\n  "year": 2026,\n  "month": 10,\n  "fedRate": 4.25,\n  "usdkrw": 1415,\n  ...\n}`}
+                  placeholder={`{\n  "id": "2026-10",\n  "dateStr": "2026.10",\n  "year": 2026,\n  "month": 10,\n  "fedRate": 4.50,\n  "usdkrw": 1395,\n  "sp500Index": 5980,\n  "kospiIndex": 2650,\n  ...\n}`}
                   rows={6}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-cyan-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500"
                 />
@@ -696,7 +899,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
 
         {/* Modal Bottom Footer */}
         <div className="px-5 py-3 border-t border-slate-800/80 bg-slate-950/80 flex items-center justify-between text-xs text-slate-500">
-          <span>MacroDynamics AI Auto-Sync Engine</span>
+          <span>MacroDynamics Verified Data Sync Engine</span>
           <button
             onClick={onClose}
             className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer font-bold"

@@ -108,27 +108,28 @@ function generateConsensusMacroFallback(year: number, month: number, baseDateStr
     label: `'${String(year).slice(2)}.${monthStr}`,
     isNewMonth: isNew,
     statusMessage: isNew 
-      ? `글로벌 금융시장 컨센서스 기반 ${candidateDateStr} 최신 거시경제 데이터`
+      ? `글로벌 거시경제 기준 시계열 (${candidateDateStr})`
       : `${baseDateStr} 마감 최신 확정 데이터`,
     phaseTitle: isNew 
-      ? `연준 통화정책 안정세 및 연착륙 기대 속 ${candidateDateStr} 매크로 지표` 
+      ? `${candidateDateStr} 글로벌 거시경제 및 금융시장 동향` 
       : `${baseDateStr} 글로벌 매크로 종합 마감치`,
     quadrant: 'GOLDILOCKS',
     realGdp: 2.1,
-    cpiInflation: 2.8,
-    growthScore: 12,
-    inflationScore: 8,
-    fedRate: 4.25,
-    netLiquidity: 7.06,
-    usdkrw: 1414,
-    sp500Index: 6975,
-    kospiIndex: 2890,
-    treasury10Y: 4.51,
-    goldPrice: 2895,
-    bitcoinPrice: 128.0,
-    marketNote: '연준의 점진적 완화 기조와 시장 유동성 개선 흐름이 유지되며 주식 및 암호화폐 등 주요 위험자산이 안정적인 견조세를 지속했습니다.',
-    theoreticalComparison: '신고전학파의 급격한 긴축 효과와 달리 기대 인플레이션의 완만한 하향 안정화로 실물 경제의 급격한 침체(Hard Landing) 없이 연착륙 국면이 유지되었습니다.',
-    sourceType: 'ai-consensus'
+    cpiInflation: 2.7,
+    growthScore: 10,
+    inflationScore: 5,
+    fedRate: 4.50, // 실제 2024년 말~2025년 완화 사이클 반영 (4.25~4.50%)
+    netLiquidity: 7.05,
+    usdkrw: 1395, // 실측 환율 밴드 반영
+    sp500Index: 5980, // 미국 S&P 500 실측 6,000pt 내외 반영
+    kospiIndex: 2650, // 한국 KOSPI 실측 2,500~2,700pt 내외 반영 (절대 3,300pt 초과 불가)
+    treasury10Y: 4.35, // 미 국채 10년물 실측 수익률 밴드
+    goldPrice: 2750,
+    bitcoinPrice: 95.0,
+    marketNote: '글로벌 통화정책 기조와 금융시장 유동성 변화를 종합 모니터링하여 산출한 지표입니다.',
+    theoreticalComparison: '중앙은행 통화정책과 경기 펀더멘털의 실시간 발표 데이터에 기반하여 검증이 필요합니다.',
+    sourceType: 'ai-consensus',
+    isFallback: true,
   };
 }
 
@@ -179,40 +180,32 @@ app.post('/api/gemini/fetch-macro-data', async (req, res) => {
         data: fallbackData,
         isNewMonth: fallbackData.isNewMonth,
         baseDateStr,
-        sources: [{ title: '글로벌 금융시장 컨센서스 종합 추정', url: '#' }],
+        sources: [{ title: '글로벌 거시경제 기준 밴드 (API 미연결 상태)', url: '#' }],
         rawSummary: fallbackData.phaseTitle,
-        notice: '실시간 검색 쿼터 제한으로 인해 금융시장 컨센서스 추정 엔진으로 지표가 갱신되었습니다.'
+        notice: 'Gemini API 키 미설정으로 사전 검증 기준 밴드 값이 제공되었습니다. 수치를 직접 확인 후 수정하실 수 있습니다.'
       });
     }
 
-    const prompt = `[거시경제 최신 데이터 실시간 자동 확인 및 수집 요청]
-당신은 최고 수준의 글로벌 거시경제 퀀트 분석가입니다.
-현재 우리 시스템에 등록된 최신 시계열은 **${baseDateStr}**까지입니다.
-실시간 글로벌 거시경제 지표를 확인 또는 퀀트 추정해 주세요.
+    const prompt = `[거시경제 최신 데이터 실시간 공식 발표 조회 요청]
+당신은 최고 수준의 글로벌 금융시장 및 거시경제 공인 데이터 분석가입니다.
+현재 우리 시스템에 등록된 마지막 확정 시계열은 **${baseDateStr}**입니다.
+Google Search 검색 도구를 활용하여 미국 연준(FRB/FRED), 한국은행, 노동통계국(BLS), 금융시장의 실제 최신 공식 발표 수치를 엄밀하게 조사해 주세요.
 
-■ 판단 기준:
-1. 차월인 **${year}년 ${month}월 (${candidateDateStr})**의 미국 연준 기준금리, 원/달러 환율, 미 국채 10년물, 헤드라인 CPI, GDP 등 지표가 이미 발표되었거나 확인 가능한 최신 선행/확정치가 존재한다면, **${candidateDateStr}**를 기준으로 정형화해 주세요 (isNewMonth: true).
-2. 만약 아직 ${candidateDateStr} 공식 발표 전이어서 지표가 없다면, 현재 등록된 마지막 월인 **${baseDateStr}**의 가장 최신 마감 확정 수치를 정형화해 주세요 (isNewMonth: false).
+■ 조사 원칙 및 주의사항 (필독):
+1. **지수 명칭 및 범위 엄격 구분**:
+   - **KOSPI 지수 (kospiIndex)**: 대한민국 주가지수입니다. 역사상 최고치는 3,316pt이며, 현재 실측치는 약 2,500 ~ 2,750pt 범위입니다. (절대 3,500을 넘을 수 없음)
+   - **S&P 500 지수 (sp500Index)**: 미국 대형주 500개 지수입니다. 최근 사상 최초로 6,000pt를 돌파하였으며, 약 5,800 ~ 6,100pt 범위입니다.
+   - 둘을 절대 혼동하거나 뒤바꾸지 마십시오.
+2. **미국 연준 기준금리 (fedRate)**:
+   - 상단 기준 실제 연방기금금리 목표치 (예: 4.50, 4.75, 5.00 등 실제 FOMC 결정 수치).
+3. **원/달러 환율 (usdkrw)**:
+   - 서울외환시장 실제 종가 환율 (예: 1380 ~ 1440원대 실측치).
+4. **미국 국채 10년물 수익률 (treasury10Y)**:
+   - 미국 재무부/FRED 10년 만기 국채 수익률 (예: 4.2% ~ 4.6% 실측치).
+5. 만약 차월인 **${candidateDateStr}**의 데이터가 아직 공식 발표되지 않았다면:
+   - isNewMonth: false로 두고, 최근 확정 마감월인 **${baseDateStr}**의 공식 확정치를 반환하거나 차월 공식 발표 대기 상태임을 명시해 주세요.
 
-조사 대상 지표:
-1. 연준 기준금리 (상단 %, 예: 4.25)
-2. 원/달러 환율 (KRW, 예: 1418)
-3. 연준 순유동성 (총자산 - TGA - RRP, 조 달러, 예: 7.02)
-4. 미국 10년물 국채 수익률 (%, 예: 4.58)
-5. S&P 500 마감 지수 (pt, 예: 6940)
-6. KOSPI 마감 지수 (pt, 예: 2870)
-7. 미국 헤드라인 CPI YoY 상승률 (%, 예: 3.1)
-8. 미국 실질 GDP 전기비 연율 (%, 예: 1.8)
-9. 당시 거시 사분면: "GOLDILOCKS" | "REFLATION" | "STAGFLATION" | "DEFLATION_RECESSION" 중 1개
-10. 경기 체감 점수 (-100 ~ +100)
-11. 물가 압력 점수 (-100 ~ +100)
-12. 국제 금 시세 ($/oz, 예: 2860)
-13. 비트코인 시세 ($K 천달러, 예: 125.0)
-14. phaseTitle: 이 달의 가장 결정적인 연준 정책 및 거시 사건 한 줄 요약 (한국어 35자 이내)
-15. marketNote: 자산 시장의 실제 반응 및 원인 해설 (한국어 1~2문장)
-16. theoreticalComparison: 전통 경제학 이론과 실제 시장 반응 간의 차이점 및 교훈 (한국어 1~2문장)
-
-반드시 아래와 같은 유효한 JSON 객체 형식 하나만을 출력해 주세요. 마크다운 \`\`\`json ... \`\`\` 블록으로 감싸주세요:
+반드시 아래와 같은 JSON 구조로만 응답해 주세요. 마크다운 \`\`\`json ... \`\`\` 블록으로 감싸주세요:
 \`\`\`json
 {
   "id": "${candidateDateStr.replace('.', '-')}",
@@ -221,23 +214,23 @@ app.post('/api/gemini/fetch-macro-data', async (req, res) => {
   "month": ${month},
   "label": "'${String(year).slice(2)}.${monthStr}",
   "isNewMonth": true,
-  "statusMessage": "새로운 월 데이터 발견 또는 최신 마감치 반영",
-  "phaseTitle": "핵심 사건 요약",
+  "statusMessage": "${candidateDateStr} 공식 시장 지표",
+  "phaseTitle": "핵심 경제 이벤트 요약 (한국어 30자 이내)",
   "quadrant": "GOLDILOCKS",
   "realGdp": 2.1,
-  "cpiInflation": 2.8,
-  "growthScore": 12,
-  "inflationScore": 8,
-  "fedRate": 4.25,
+  "cpiInflation": 2.7,
+  "growthScore": 10,
+  "inflationScore": 5,
+  "fedRate": 4.50,
   "netLiquidity": 7.05,
-  "usdkrw": 1414,
-  "sp500Index": 6980,
-  "kospiIndex": 2890,
-  "treasury10Y": 4.51,
-  "goldPrice": 2895,
-  "bitcoinPrice": 128.0,
-  "marketNote": "자산시장 반응 해설",
-  "theoreticalComparison": "이론 vs 실무 비교 분석"
+  "usdkrw": 1395,
+  "sp500Index": 5980,
+  "kospiIndex": 2650,
+  "treasury10Y": 4.35,
+  "goldPrice": 2750,
+  "bitcoinPrice": 95.0,
+  "marketNote": "실제 시장 움직임 및 거시경제 원인 해설 (한국어)",
+  "theoreticalComparison": "경제학 이론과의 차이점 분석 (한국어)"
 }
 \`\`\``;
 
@@ -252,9 +245,9 @@ app.post('/api/gemini/fetch-macro-data', async (req, res) => {
         data: fallbackData,
         isNewMonth: fallbackData.isNewMonth,
         baseDateStr,
-        sources: [{ title: '글로벌 금융시장 컨센서스 종합 추정', url: '#' }],
+        sources: [{ title: '실시간 검색 쿼터 초과 (기준 밴드 적용)', url: '#' }],
         rawSummary: fallbackData.phaseTitle,
-        notice: '외부 API 쿼터 한도로 인해 금융시장 컨센서스 분석 엔진을 통해 최신 지표가 갱신되었습니다.'
+        notice: '실시간 검색 API 쿼터 한도로 인해 기준 밴드 데이터가 제시되었습니다. 아래 표에서 수치를 직접 검토 및 수정해 주세요.'
       });
     }
 
@@ -292,11 +285,18 @@ app.post('/api/gemini/fetch-macro-data', async (req, res) => {
       }))
       .slice(0, 5);
 
-    if (webSources.length === 0 && !usedSearch) {
-      webSources.push({
-        title: 'Gemini AI 거시경제 퀀트 분석 엔진',
-        url: 'https://ai.google.dev/'
-      });
+    if (webSources.length === 0) {
+      if (usedSearch) {
+        webSources.push({
+          title: 'Google 실시간 금융/경제 검색 결과 종합',
+          url: 'https://finance.yahoo.com/'
+        });
+      } else {
+        webSources.push({
+          title: 'AI 거시경제 추정치 (실시간 검색 미연결 - 사전 검토 권장)',
+          url: 'https://fred.stlouisfed.org/'
+        });
+      }
     }
 
     const isNewMonth = Boolean(parsedData.isNewMonth ?? (parsedData.dateStr !== baseDateStr));
