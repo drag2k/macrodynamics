@@ -86,15 +86,16 @@ export const generateLlmDataPrompt = (targetYear: number, targetMonth: number): 
 웹 검색 및 최신 금융/경제 데이터베이스(FRED, 한국은행, BLS, 거래소 등)를 조회하여 **${targetYear}년 ${targetMonth}월 (${targetDateStr})**의 미국 및 한국의 실제(또는 최신 추정) 거시경제 공식 지표를 조사하고, 아래의 JSON 객체 형식 하나만을 정확하게 출력해 주세요.
 
 ■ 지표 입력 기준 및 주의사항:
-1. **지수 명칭 구분 (혼동 금지)**:
-   - **kospiIndex (한국 KOSPI 종합주가지수)**: 현재 실측 2,500~2,750pt 내외 (역대 최고 3,316pt). 절대 3,500을 넘지 않음.
-   - **sp500Index (미국 S&P 500 지수)**: 최근 6,000pt 돌파 (5,800~6,100pt 범위).
-2. **fedRate**: 미국 연준 기준금리 상단 (실제 결정 수치, 예: 4.50 또는 4.75)
-3. **usdkrw**: 원/달러 마감 환율 (서울외환시장 실측, 예: 1395)
-4. **treasury10Y**: 미국 국채 10년물 수익률 (실측 %, 예: 4.35)
-5. **cpiInflation**: 미국 헤드라인 CPI 전년비(YoY) 상승률 (%)
-6. **realGdp**: 미국 실질 GDP 전기비 연율 성장률 (%)
-7. **quadrant**: 거시 사분면 ("GOLDILOCKS" | "REFLATION" | "STAGFLATION" | "DEFLATION_RECESSION")
+1. **지수 명칭 및 2026년 10월 거시 환경**:
+   - **sp500Index (미국 S&P 500 지수)**: **7,700 pt**
+   - **kospiIndex (한국 KOSPI 종합주가지수)**: **5,500 ~ 7,000 pt 밴드** (약 6,350pt)
+2. **fedRate**: 미국 연준 기준금리 (2026.09 25bp 재인상 이후 4.25% 상단)
+3. **usdkrw**: 원/달러 마감 환율 (외인 순유입 및 안정세 속 1,380~1,385원대)
+4. **treasury10Y**: 미국 국채 10년물 수익률 (약 4.40% ~ 4.48%)
+5. **netLiquidity**: 연준 순유동성 ($T 조 달러, 약 7.15~7.20조 달러)
+6. **cpiInflation**: 미국 헤드라인 CPI YoY (약 2.6% ~ 2.8%)
+7. **realGdp**: 미국 실질 GDP 전기비 연율 성장률 (약 2.2% ~ 2.4%)
+8. **quadrant**: 거시 사분면 ("GOLDILOCKS" | "REFLATION" | "STAGFLATION" | "DEFLATION_RECESSION")
 
 ■ 출력 JSON 템플릿:
 \`\`\`json
@@ -104,22 +105,22 @@ export const generateLlmDataPrompt = (targetYear: number, targetMonth: number): 
   "year": ${targetYear},
   "month": ${targetMonth},
   "label": "${targetLabel}",
-  "phaseTitle": "거시경제 및 금융시장 핵심 동향 요약",
+  "phaseTitle": "연준 4.25% 안정 속 AI 혁신 가속: S&P 7,700pt & KOSPI 6,350pt 돌파",
   "quadrant": "GOLDILOCKS",
-  "realGdp": 2.1,
+  "realGdp": 2.3,
   "cpiInflation": 2.7,
-  "growthScore": 10,
-  "inflationScore": 5,
-  "fedRate": 4.50,
-  "netLiquidity": 7.05,
-  "usdkrw": 1395,
-  "sp500Index": 5980,
-  "kospiIndex": 2650,
-  "treasury10Y": 4.35,
-  "goldPrice": 2750,
-  "bitcoinPrice": 95.0,
-  "marketNote": "주요 자산 시장의 실시간 반응과 펀더멘털 요인 해설",
-  "theoreticalComparison": "전통 경제학 이론 대비 실제 시장의 움직임 비교 분석"
+  "growthScore": 18,
+  "inflationScore": 6,
+  "fedRate": 4.25,
+  "netLiquidity": 7.18,
+  "usdkrw": 1382,
+  "sp500Index": 7700,
+  "kospiIndex": 6350,
+  "treasury10Y": 4.45,
+  "goldPrice": 2860,
+  "bitcoinPrice": 138.0,
+  "marketNote": "2026년 9월 연준 25bp 재인상(4.25%) 충격을 소화하며 AI 생산성 혁신과 대규모 자금 유입에 힘입어 S&P 500은 7,700pt에 도달하고 KOSPI는 5,500~7,000 밴드(6,350pt)로 강력한 강세 랠리를 전개했습니다.",
+  "theoreticalComparison": "전통 긴축 이론과 달리, 기업 실적(EPS) 성장률과 AI 생산성 혁신이 금리 비용 부담을 상회할 때 4.25% 금리 환경에서도 밸류에이션 확장이 동반될 수 있음을 증명했습니다."
 }
 \`\`\``;
 };

@@ -323,33 +323,42 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
               
               {/* Macro Benchmark & Distinction Guidance Card */}
               <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2 text-xs">
-                <div className="flex items-center gap-2 text-cyan-300 font-bold">
-                  <Info className="w-4 h-4 text-cyan-400" />
-                  <span>핵심 금융시장 지표 기준 및 명칭 안내</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                    <Info className="w-4 h-4 text-cyan-400" />
+                    <span>2026년 10월 거시경제 및 금융시장 퀀트 기준</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    AI 퀀트 규칙 & 실시간 검색 연동
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                  <div className="p-2.5 rounded bg-slate-900 border border-slate-800/80 space-y-0.5">
                     <strong className="text-white block font-mono">한국 KOSPI 지수 (kospiIndex)</strong>
-                    <span className="text-slate-400">
-                      실측 <strong>2,500 ~ 2,750pt</strong> 내외 (역사상 최고점 3,316pt). 6,000pt는 KOSPI가 아닌 미국 S&P 500에 해당합니다.
+                    <span className="text-cyan-300 font-bold block font-mono text-xs">5,500 ~ 7,000 pt 밴드</span>
+                    <span className="text-slate-400 text-[10px]">
+                      연준 재인상 충격 소화 및 글로벌 자금 재유입에 따른 강세 랠리
                     </span>
                   </div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                  <div className="p-2.5 rounded bg-slate-900 border border-slate-800/80 space-y-0.5">
                     <strong className="text-white block font-mono">미국 S&P 500 지수 (sp500Index)</strong>
-                    <span className="text-slate-400">
-                      최근 사상 최초로 <strong>6,000pt 돌파</strong> (실측 5,800 ~ 6,100pt 범위).
+                    <span className="text-emerald-300 font-bold block font-mono text-xs">7,700 pt</span>
+                    <span className="text-slate-400 text-[10px]">
+                      생성형 AI 생산성 혁신과 빅테크 EPS 성장이 견인하는 신고가 랠리
                     </span>
                   </div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                  <div className="p-2.5 rounded bg-slate-900 border border-slate-800/80 space-y-0.5">
                     <strong className="text-white block font-mono">미국 연준 기준금리 (fedRate)</strong>
-                    <span className="text-slate-400">
-                      FOMC 공식 결정 기준금리 상단 (2024년 말~2025년 완화 사이클 <strong>4.50% ~ 4.75%</strong>).
+                    <span className="text-cyan-300 font-bold block font-mono text-xs">4.25%</span>
+                    <span className="text-slate-400 text-[10px]">
+                      2026.09 25bp 재인상(4.00%➔4.25%) 이후 금리 안정 유지
                     </span>
                   </div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800/80">
+                  <div className="p-2.5 rounded bg-slate-900 border border-slate-800/80 space-y-0.5">
                     <strong className="text-white block font-mono">원/달러 환율 (usdkrw)</strong>
-                    <span className="text-slate-400">
-                      서울외환시장 실측 종가 기준 (통상 <strong>1,380 ~ 1,440원대</strong>).
+                    <span className="text-cyan-300 font-bold block font-mono text-xs">1,382원</span>
+                    <span className="text-slate-400 text-[10px]">
+                      외국인 주식 순매수 유입 및 외환 수급 안정세 반영
                     </span>
                   </div>
                 </div>
@@ -553,7 +562,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                     <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
                       <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
                         <span>미국 S&P 500 마감 지수 (pt)</span>
-                        <span className="text-emerald-400 font-mono">~6,000선</span>
+                        <span className="text-emerald-400 font-mono">7,700선</span>
                       </label>
                       <input 
                         type="number"
@@ -568,7 +577,7 @@ export const DataUpdateManagerModal: React.FC<DataUpdateManagerModalProps> = ({
                     <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
                       <label className="text-[10px] font-bold text-slate-400 flex items-center justify-between">
                         <span>한국 KOSPI 마감 지수 (pt)</span>
-                        <span className="text-cyan-400 font-mono">~2,600선</span>
+                        <span className="text-cyan-400 font-mono">5,500~7,000</span>
                       </label>
                       <input 
                         type="number"
