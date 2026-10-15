@@ -42,6 +42,7 @@ export async function fetchMacroDataWithGemini(
     currentLatestDateStr?: string;
     year?: number;
     month?: number;
+    mode?: 'auto' | 'rule' | 'ai';
   } | number,
   optionalMonth?: number
 ): Promise<GeminiMacroFetchResponse> {

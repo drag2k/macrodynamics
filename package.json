@@ -1,7 +1,7 @@
 {
   "name": "macrodynamics",
   "private": true,
-  "version": "1.0.10",
+  "version": "1.0.11",
   "author": "pandw Lee <pandw2k@gmail.com>",
   "type": "module",
   "scripts": {
