@@ -128,7 +128,7 @@ export const CustomVerticalFader: React.FC<CustomVerticalFaderProps> = ({
       {/* 3. 시원하고 긴 세로 슬라이더 바 & 물리적 놉(Knob Handle) */}
       <div className="flex items-center justify-center gap-4 py-2 select-none">
         {/* Left Side: 눈금 틱 라벨 (Tick Marks) */}
-        <div className="flex flex-col justify-between h-72 py-1 text-[10px] font-mono font-semibold text-slate-500 text-right pr-1">
+        <div className="flex flex-col justify-between h-40 sm:h-48 py-1 text-[10px] font-mono font-semibold text-slate-500 text-right pr-1">
           {ticks.map((t) => (
             <div 
               key={t.value} 
@@ -145,10 +145,10 @@ export const CustomVerticalFader: React.FC<CustomVerticalFaderProps> = ({
         <div
           ref={trackRef}
           onPointerDown={handlePointerDown}
-          className="relative h-72 w-14 flex items-center justify-center cursor-ns-resize touch-none"
+          className="relative h-40 sm:h-48 w-12 sm:w-14 flex items-center justify-center cursor-ns-resize touch-none"
         >
           {/* Background Track Groove (깊이감 있는 세로 홈) */}
-          <div className="absolute w-3 h-full bg-slate-950 rounded-full border border-slate-800 shadow-inner overflow-hidden">
+          <div className="absolute w-2.5 sm:w-3 h-full bg-slate-950 rounded-full border border-slate-800 shadow-inner overflow-hidden">
             {/* Dynamic Active Fill (하단에서부터 차오르는 컬러 바) */}
             <div
               className={`w-full transition-all duration-75 rounded-full absolute bottom-0 ${
@@ -164,7 +164,7 @@ export const CustomVerticalFader: React.FC<CustomVerticalFaderProps> = ({
 
           {/* 물리적 페이더 핸들 (Heavy Duty Physical Handle Knob) */}
           <div
-            className={`absolute w-12 h-7 rounded-lg border flex flex-col items-center justify-center transition-transform duration-75 shadow-xl ${
+            className={`absolute w-11 sm:w-12 h-6 sm:h-7 rounded-lg border flex flex-col items-center justify-center transition-transform duration-75 shadow-xl ${
               isDragging
                 ? isCyan
                   ? 'bg-slate-800 border-cyan-400 scale-105 shadow-cyan-500/30'
@@ -174,23 +174,23 @@ export const CustomVerticalFader: React.FC<CustomVerticalFaderProps> = ({
                 : 'bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 border-slate-600 hover:border-slate-400'
             }`}
             style={{
-              bottom: `calc(${percentage}% - 14px)`,
+              bottom: `calc(${percentage}% - 12px)`,
               cursor: isDragging ? 'grabbing' : 'grab',
             }}
           >
             {/* Metal Grip Lines (마우스로 잡을 수 있는 그립 홈 라인) */}
-            <div className="w-6 flex flex-col items-center gap-[3px]">
-              <div className="w-full h-[2px] bg-slate-400/80 rounded-full" />
-              <div className={`w-full h-[2px] rounded-full ${
+            <div className="w-5 sm:w-6 flex flex-col items-center gap-[2.5px] sm:gap-[3px]">
+              <div className="w-full h-[1.5px] sm:h-[2px] bg-slate-400/80 rounded-full" />
+              <div className={`w-full h-[1.5px] sm:h-[2px] rounded-full ${
                 isCyan ? 'bg-cyan-400' : isEmerald ? 'bg-emerald-400' : 'bg-purple-400'
               }`} />
-              <div className="w-full h-[2px] bg-slate-400/80 rounded-full" />
+              <div className="w-full h-[1.5px] sm:h-[2px] bg-slate-400/80 rounded-full" />
             </div>
           </div>
         </div>
 
         {/* Right Side: 세로 트랙 눈금 선 (Tick Lines) */}
-        <div className="flex flex-col justify-between h-72 py-2 text-slate-700 pl-1">
+        <div className="flex flex-col justify-between h-40 sm:h-48 py-2 text-slate-700 pl-1">
           {ticks.map((t) => (
             <div key={t.value} className="flex items-center gap-1">
               <div className="w-2.5 h-[1.5px] bg-slate-700" />
@@ -199,21 +199,7 @@ export const CustomVerticalFader: React.FC<CustomVerticalFaderProps> = ({
         </div>
       </div>
 
-      {/* 4. 하단 트렌드 스파크라인 (해당 지표 실측 기간 변동 궤적 그래프) */}
-      {sparklineData && sparklineData.history.length > 1 && (
-        <div className="pt-2 border-t border-slate-800/80">
-          <MiniSparkline
-            data={sparklineData.history}
-            currentIndex={sparklineData.currentIndex}
-            color={isCyan ? 'cyan' : isEmerald ? 'emerald' : 'purple'}
-            label={sparklineData.label || '기간 실측 궤적'}
-            unit={sparklineData.unit}
-            formatFn={formatValue}
-          />
-        </div>
-      )}
-
-      {/* 5. 하단 안내 힌트 */}
+      {/* 4. 하단 안내 힌트 */}
       <div className="text-center text-[10px] text-slate-500 font-medium">
         핸들을 위아래로 끌어 조절
       </div>

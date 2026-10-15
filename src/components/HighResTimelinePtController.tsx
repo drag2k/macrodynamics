@@ -294,22 +294,25 @@ const PtMetricGraphCard: React.FC<PtMetricGraphCardProps> = ({
   rangeEndIdx
 }) => {
   return (
-    <div className="bg-slate-950/85 p-2.5 rounded-xl border border-slate-800/90 hover:border-slate-700/80 transition-all flex flex-col justify-between shadow-sm">
-      <div>
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1 min-w-0">
-            <span className="text-[10px] text-slate-300 font-mono font-bold truncate">{title}</span>
+    <div className="bg-slate-950/85 p-2 sm:p-2.5 rounded-xl border border-slate-800/90 hover:border-slate-700/80 transition-all flex flex-col justify-between shadow-sm min-w-0">
+      <div className="min-w-0">
+        {/* Row 1: Title & Optional SubLabel & Start Ref */}
+        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-0.5 xs:gap-1 min-w-0">
+          <div className="flex items-center gap-1 min-w-0 flex-wrap">
+            <span className="text-[11px] sm:text-[10px] text-slate-200 font-mono font-bold leading-tight break-keep">{title}</span>
             {subLabel && (
-              <span className="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-sans border border-slate-700/60 shrink-0">
+              <span className="text-[8px] px-1 py-0.2 rounded bg-slate-800/90 text-slate-400 font-sans border border-slate-700/60 shrink-0 whitespace-nowrap">
                 {subLabel}
               </span>
             )}
           </div>
-          <span className="text-[9px] text-slate-500 font-mono shrink-0">{startText}</span>
+          <span className="text-[8px] sm:text-[9px] text-slate-500 font-mono shrink-0 whitespace-nowrap self-end xs:self-auto">{startText}</span>
         </div>
-        <div className="flex items-baseline justify-between mt-1">
-          <span className={`text-base font-black font-mono ${valueColor}`}>{currentValue}</span>
-          <span className={`text-[10px] font-mono font-bold ${deltaColor}`}>{deltaText}</span>
+
+        {/* Row 2: Current Value & Delta */}
+        <div className="flex items-baseline justify-between mt-1 gap-1 flex-wrap">
+          <span className={`text-sm sm:text-base font-black font-mono tracking-tight shrink-0 ${valueColor}`}>{currentValue}</span>
+          <span className={`text-[9px] sm:text-[10px] font-mono font-bold shrink-0 ${deltaColor}`}>{deltaText}</span>
         </div>
       </div>
 
@@ -481,33 +484,33 @@ export const HighResTimelinePtController: React.FC<HighResTimelinePtControllerPr
 
   if (!isOpen) {
     return (
-      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900/60 border border-slate-800/80 mb-3 text-xs">
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-          <span className="font-semibold text-slate-300">자유 시뮬레이션</span>
-          <span className="text-slate-500 hidden sm:inline">• 사분면과 3대 페이더를 직접 조작하는 라이브 모드</span>
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between px-2.5 sm:px-3.5 py-2 rounded-xl bg-slate-900/60 border border-slate-800/80 mb-3 text-xs gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 shrink-0" />
+          <span className="font-semibold text-slate-300 text-xs">자유 시뮬레이션</span>
+          <span className="text-slate-500 hidden md:inline">• 사분면과 3대 페이더를 직접 조작하는 라이브 모드</span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
           {onOpenDataUpdateManager && (
             <button
               onClick={onOpenDataUpdateManager}
-              className="px-2.5 py-1.5 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-600/40 text-cyan-300 font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-sm text-xs"
+              className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-600/40 text-cyan-300 font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap shadow-sm text-[11px] sm:text-xs"
               title="글로벌 시장 실시간 발표 확인 및 최신 데이터 자동 업데이트"
             >
               <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span>최신 데이터 업데이트</span>
+              <span><span className="hidden xs:inline">최신 </span>데이터 업데이트</span>
             </button>
           )}
 
           <button
             onClick={onToggleOpen}
-            className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-sm"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap shadow-sm text-[11px] sm:text-xs"
             title="2000~2026 역대 미국 금융위기 시계열 시뮬레이션 열기"
           >
             <Compass className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>역사적 위기 시계열 PT</span>
-            <span className="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded ml-0.5 shrink-0">
+            <span><span className="hidden xs:inline">역사적 위기 </span>시계열 PT</span>
+            <span className="text-[9px] sm:text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1 sm:px-1.5 py-0.2 rounded ml-0.5 shrink-0">
               2000~2026
             </span>
           </button>

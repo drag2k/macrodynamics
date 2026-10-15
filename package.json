@@ -1,7 +1,7 @@
 {
   "name": "macrodynamics",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.7",
   "author": "pandw Lee <pandw2k@gmail.com>",
   "type": "module",
   "scripts": {
@@ -35,6 +35,7 @@
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
+    "vercel": "^63.1.2",
     "vite-plugin-pwa": "^1.3.0"
   }
 }

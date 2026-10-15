@@ -198,7 +198,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 overflow-x-hidden w-full">
       {/* Navigation Header */}
       <Header
         onOpenFactCheckModal={() => setIsFactCheckModalOpen(true)}
@@ -212,8 +212,8 @@ export default function App() {
       />
 
       {/* Main Single-Screen Interactive Canvas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <section className="space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-3.5 sm:py-6 space-y-4 sm:space-y-6">
+        <section className="space-y-4 sm:space-y-6">
           <IntegratedCockpitView
             rateValue={fedRateValue}
             setRateValue={setFedRateValue}

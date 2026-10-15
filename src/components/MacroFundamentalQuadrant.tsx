@@ -1,12 +1,12 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react';
-import { MacroQuadrant } from '../types';
+import { MacroQuadrant, AssetMetric } from '../types';
 import { MACRO_QUADRANT_INFO, scoreToMacroFundamentals } from '../utils/macroUnifiedEngine';
 import { 
   HistoricalMacroPoint, 
   HISTORICAL_MACRO_TIMELINE 
 } from '../data/historicalTimelineData';
 import { MonthlyMacroTimeSeriesPoint, MONTHLY_MACRO_SERIES } from '../data/monthlyMacroTimeSeries';
-import { Sparkles, Flame, CloudLightning, Snowflake, Move, ArrowRight, ArrowUp, ArrowDown, ArrowLeft, Target, MapPin, Activity } from 'lucide-react';
+import { Sparkles, Flame, CloudLightning, Snowflake, Move, ArrowRight, ArrowUp, ArrowDown, ArrowLeft, Target, MapPin, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface MacroFundamentalQuadrantProps {
   growthScore: number;       // -100 to +100
@@ -22,6 +22,11 @@ interface MacroFundamentalQuadrantProps {
   isSimulationMode?: boolean;
   activeEraId?: string;
   activeEraTitle?: string;
+  rateValue?: number;
+  liquidityValue?: number;
+  fxValue?: number;
+  sp500Asset?: AssetMetric;
+  kospiAsset?: AssetMetric;
 }
 
 export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> = ({
@@ -37,7 +42,12 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
   activeSeries,
   isSimulationMode = true,
   activeEraId = 'recent-pivot-2024',
-  activeEraTitle
+  activeEraTitle,
+  rateValue,
+  liquidityValue,
+  fxValue,
+  sp500Asset,
+  kospiAsset,
 }) => {
   const padRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -193,22 +203,22 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
   return (
     <div id="macro-quadrant-panel" className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 shadow-xl select-none">
       {/* 1. Header: Primary Goal & Instructions */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-3 mb-3 border-b border-slate-800 gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 shrink-0">
-            <Target className="w-5 h-5 animate-pulse" />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-3 mb-3 border-b border-slate-800 gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 shrink-0">
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-mono font-bold tracking-wider text-cyan-400 uppercase">
                 STEP 1 : FUNDAMENTAL CAUSAL MAP
               </span>
-              <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">
-                마우스 드래그로 조작
+              <span className="text-[9px] sm:text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full font-mono">
+                드래그 조작
               </span>
             </div>
-            <h2 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-              <span>거시경제 펀더멘털 좌표계 (실질GDP성장률 × CPI물가상승률)</span>
+            <h2 className="text-xs sm:text-base font-extrabold text-white flex items-center gap-1.5 truncate">
+              <span>거시경제 펀더멘털 좌표계 (실질GDP × CPI)</span>
               {activeEraTitle && isSimulationMode && (
                 <span className="hidden md:inline-block px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-slate-800 text-cyan-300 border border-slate-700">
                   {activeEraTitle} 궤적 연동
@@ -219,9 +229,9 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
         </div>
 
         {/* Current Active Quadrant Diagnosis Badge */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-mono">현재 도달 국면:</span>
-          <span className={`px-3 py-1 rounded-full text-xs font-black border flex items-center gap-1.5 shadow-sm ${
+        <div className="flex items-center gap-2 self-start lg:self-auto">
+          <span className="text-[11px] sm:text-xs text-slate-400 font-mono">현재 국면:</span>
+          <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-black border flex items-center gap-1.5 shadow-sm ${
             currentQuadrant === 'GOLDILOCKS'
               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
               : currentQuadrant === 'REFLATION'
@@ -239,8 +249,16 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
         </div>
       </div>
 
-      {/* 2. Step-by-Step User Action Guide Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+      {/* 2. Step-by-Step User Action Guide Bar (Responsive) */}
+      {/* Mobile single-row compact guide */}
+      <div className="sm:hidden bg-slate-950/80 rounded-xl px-2.5 py-1.5 border border-slate-800/80 flex items-center justify-between text-[10px] font-mono mb-3">
+        <span className="text-cyan-400 flex items-center gap-0.5">↔ GDP(침체↔호황)</span>
+        <span className="text-slate-600">·</span>
+        <span className="text-rose-400 flex items-center gap-0.5">↕ CPI(디플레↕인플레)</span>
+      </div>
+
+      {/* Desktop 2-column detailed guide */}
+      <div className="hidden sm:grid grid-cols-2 gap-2 mb-4">
         <div className="bg-slate-950/80 rounded-xl px-3.5 py-2 border border-slate-800/80 flex items-center justify-between text-xs">
           <span className="font-bold text-slate-300 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-cyan-400" />
@@ -267,14 +285,14 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
       </div>
 
       {/* 3. The Precision Coordinate Plane Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         {/* Main Chart Area with Real Axes & Numbers (Col 8) */}
         <div className="lg:col-span-8 flex flex-col justify-between">
-          <div className="flex items-stretch gap-2">
+          <div className="flex items-stretch gap-1.5 sm:gap-2">
             {/* Y-Axis (Vertical Left Column): CPI Numbers & Ticks */}
-            <div className="w-20 sm:w-24 shrink-0 flex flex-col justify-between py-2 text-right pr-2 select-none border-r border-slate-800/80 relative">
-              <span className="text-[10px] font-mono font-bold text-rose-400 block pb-1 border-b border-slate-800">
-                물가 Y축 (CPI)
+            <div className="w-11 sm:w-24 shrink-0 flex flex-col justify-between py-2 text-right pr-1 sm:pr-2 select-none border-r border-slate-800/80 relative">
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-rose-400 block pb-1 border-b border-slate-800">
+                물가(CPI)
               </span>
 
               {/* Ticks on Y-axis */}
@@ -282,16 +300,16 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
                 {yTicks.map((tick, idx) => (
                   <div
                     key={idx}
-                    className="absolute right-0 -translate-y-1/2 flex items-center gap-1.5"
+                    className="absolute right-0 -translate-y-1/2 flex items-center gap-1 sm:gap-1.5"
                     style={{ top: tick.top }}
                   >
                     <div className="text-right leading-none">
-                      <span className={`font-mono text-xs font-black block ${tick.isBenchmark ? 'text-amber-300' : 'text-slate-300'}`}>
+                      <span className={`font-mono text-[10px] sm:text-xs font-black block ${tick.isBenchmark ? 'text-amber-300' : 'text-slate-300'}`}>
                         {tick.label}
                       </span>
-                      <span className="text-[9px] text-slate-500 font-sans block">{tick.desc}</span>
+                      <span className="text-[9px] text-slate-500 font-sans hidden sm:block">{tick.desc}</span>
                     </div>
-                    <div className={`w-2 h-0.5 ${tick.isBenchmark ? 'bg-amber-400' : 'bg-slate-700'}`} />
+                    <div className={`w-1.5 sm:w-2 h-0.5 ${tick.isBenchmark ? 'bg-amber-400' : 'bg-slate-700'}`} />
                   </div>
                 ))}
 
@@ -300,23 +318,23 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
                   className="absolute right-0 -translate-y-1/2 flex items-center gap-1 transition-all duration-75 pointer-events-none z-20"
                   style={{ top: `${posY}%` }}
                 >
-                  <span className="px-1.5 py-0.5 rounded bg-rose-500 text-white font-mono text-[10px] font-black shadow-lg">
+                  <span className="px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded bg-rose-500 text-white font-mono text-[9px] sm:text-[10px] font-black shadow-lg">
                     {fundamentals.cpiInflation}%
                   </span>
-                  <div className="w-2.5 h-1 bg-rose-400 rounded-l" />
+                  <div className="w-1.5 sm:w-2.5 h-1 bg-rose-400 rounded-l" />
                 </div>
               </div>
             </div>
 
             {/* Interactive Graph Surface (Canvas) */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
               <div
                 ref={padRef}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
-                className={`relative w-full h-64 sm:h-72 bg-slate-950 rounded-2xl border ${
+                className={`relative w-full h-48 sm:h-72 bg-slate-950 rounded-2xl border ${
                   isDragging 
                     ? 'border-cyan-400 shadow-2xl shadow-cyan-500/20 ring-2 ring-cyan-400/40' 
                     : 'border-slate-700 hover:border-slate-600'
@@ -487,18 +505,18 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
               </div>
 
               {/* X-Axis (Horizontal Bottom Row): GDP Numbers & Ticks */}
-              <div className="relative h-12 pt-2 select-none">
+              <div className="relative h-10 sm:h-12 pt-2 select-none">
                 {xTicks.map((tick, idx) => (
                   <div
                     key={idx}
                     className="absolute -translate-x-1/2 flex flex-col items-center"
                     style={{ left: tick.left }}
                   >
-                    <div className={`w-0.5 h-2 ${tick.isBenchmark ? 'bg-emerald-400' : 'bg-slate-700'}`} />
-                    <span className={`font-mono text-xs font-black block mt-0.5 ${tick.isBenchmark ? 'text-emerald-300' : 'text-slate-300'}`}>
+                    <div className={`w-0.5 h-1.5 sm:h-2 ${tick.isBenchmark ? 'bg-emerald-400' : 'bg-slate-700'}`} />
+                    <span className={`font-mono text-[10px] sm:text-xs font-black block mt-0.5 ${tick.isBenchmark ? 'text-emerald-300' : 'text-slate-300'}`}>
                       {tick.label}
                     </span>
-                    <span className="text-[9px] text-slate-500 font-sans block whitespace-nowrap">{tick.desc}</span>
+                    <span className="text-[9px] text-slate-500 font-sans hidden sm:block whitespace-nowrap">{tick.desc}</span>
                   </div>
                 ))}
 
@@ -508,16 +526,146 @@ export const MacroFundamentalQuadrant: React.FC<MacroFundamentalQuadrantProps> =
                   style={{ left: `${posX}%` }}
                 >
                   <div className="w-1 h-2 bg-cyan-400 rounded-b" />
-                  <span className="px-1.5 py-0.5 rounded bg-cyan-500 text-slate-950 font-mono text-[10px] font-black shadow-lg whitespace-nowrap">
+                  <span className="px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded bg-cyan-500 text-slate-950 font-mono text-[9px] sm:text-[10px] font-black shadow-lg whitespace-nowrap">
                     GDP {fundamentals.realGdpGrowth > 0 ? `+${fundamentals.realGdpGrowth}` : fundamentals.realGdpGrowth}%
                   </span>
                 </div>
               </div>
 
               {/* X-Axis Main Label */}
-              <div className="text-center text-[10px] font-mono font-bold text-cyan-400 -mt-1">
-                ▲ 가로 X축 : 미국 실질 GDP 성장률 (Real GDP Growth Rate, 연율 %) & ISM 제조업 PMI
+              <div className="text-center text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 -mt-1">
+                ▲ 가로 X축 : 실질 GDP 성장률 (연율 %)
               </div>
+
+              {/* LIVE TRANSMISSION LINK (Layer 1 ➔ Layer 2 & 3 세로 슬림 연동 피드백 바) */}
+              {rateValue !== undefined && liquidityValue !== undefined && fxValue !== undefined && (
+                <div className="mt-3 p-3 rounded-xl bg-slate-950/95 border border-slate-800 space-y-2 select-none shadow-md">
+                  <div className="flex items-center justify-between text-xs pb-1.5 border-b border-slate-800/80">
+                    <span className="font-extrabold text-cyan-400 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                      <span>[LAYER 2] 3대 정책 전달계 실시간 연동 (금리·통화량·환율)</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      사분면 퍽 위치 즉각 연동
+                    </span>
+                  </div>
+
+                  {/* 세로 슬림 행 1: 미국 기준금리 (Fed Rate) */}
+                  <div className="p-2 rounded-lg bg-slate-900/80 border border-cyan-950/60 space-y-1 transition-all">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-cyan-400 font-bold">① 미국 기준금리</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50">
+                          {rateValue >= 5.25 ? '고금리 긴축' : rateValue >= 4.0 ? '중고금리' : rateValue >= 2.5 ? '중립금리' : '저금리 부양'}
+                        </span>
+                      </div>
+                      <span className="font-black font-mono text-cyan-300 text-sm">
+                        {rateValue.toFixed(2)}%
+                      </span>
+                    </div>
+                    {/* Full-width slim animated bar */}
+                    <div className="w-full bg-slate-800/90 h-2 rounded-full overflow-hidden p-0.5">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-600 via-cyan-400 to-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.8)] transition-all duration-150 ease-out"
+                        style={{ width: `${Math.min(100, Math.max(2, (rateValue / 7.0) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 세로 슬림 행 2: 달러 통화량/순유동성 (Net Liquidity) */}
+                  <div className="p-2 rounded-lg bg-slate-900/80 border border-purple-950/60 space-y-1 transition-all">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-purple-400 font-bold">② 달러 통화량 (순유동성)</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-800/50">
+                          {liquidityValue <= 6.0 ? '긴축 가뭄' : liquidityValue <= 7.0 ? '완만 QT' : liquidityValue <= 8.0 ? '중립 균형' : '유동성 확대'}
+                        </span>
+                      </div>
+                      <span className="font-black font-mono text-purple-300 text-sm">
+                        ${liquidityValue.toFixed(1)}T
+                      </span>
+                    </div>
+                    {/* Full-width slim animated bar */}
+                    <div className="w-full bg-slate-800/90 h-2 rounded-full overflow-hidden p-0.5">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.8)] transition-all duration-150 ease-out"
+                        style={{ width: `${Math.min(100, Math.max(2, ((liquidityValue - 5.5) / 4.0) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 세로 슬림 행 3: 원/달러 환율 (USD/KRW) */}
+                  <div className="p-2 rounded-lg bg-slate-900/80 border border-emerald-950/60 space-y-1 transition-all">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-emerald-400 font-bold">③ 원/달러 환율</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/50">
+                          {fxValue >= 1410 ? '고환율 경계' : fxValue >= 1320 ? '원화 약세' : fxValue >= 1250 ? '평균 박스권' : '원화 강세'}
+                        </span>
+                      </div>
+                      <span className="font-black font-mono text-emerald-300 text-sm">
+                        {fxValue.toLocaleString()}원
+                      </span>
+                    </div>
+                    {/* Full-width slim animated bar */}
+                    <div className="w-full bg-slate-800/90 h-2 rounded-full overflow-hidden p-0.5">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.8)] transition-all duration-150 ease-out"
+                        style={{ width: `${Math.min(100, Math.max(2, ((fxValue - 900) / 750) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 세로 슬림 행 4: 미국 & 한국 주식 파급 (Layer 3) */}
+                  {sp500Asset && kospiAsset && (
+                    <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-extrabold text-amber-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span>[LAYER 3] 주식시장 실시간 파급</span>
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-500">동시 연동</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                        {/* S&P 500 */}
+                        <div className={`p-2 rounded-lg border transition-all duration-150 ${sp500Asset.direction === 'UP' ? 'bg-emerald-950/25 border-emerald-500/40 text-emerald-300' : sp500Asset.direction === 'DOWN' ? 'bg-rose-950/25 border-rose-500/40 text-rose-300' : 'bg-slate-900 border-slate-800 text-slate-300'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[10px] text-white">🇺🇸 미국 주식</span>
+                            <span className={`text-[11px] font-black ${sp500Asset.score >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {sp500Asset.direction === 'UP' ? '▲' : sp500Asset.direction === 'DOWN' ? '▼' : '─'} {sp500Asset.score > 0 ? `+${sp500Asset.score}` : sp500Asset.score}pt
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold block truncate mt-0.5">{sp500Asset.badge}</span>
+                          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-150 rounded-full ${sp500Asset.score >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`}
+                              style={{ width: `${Math.min(100, Math.max(10, Math.abs(sp500Asset.score)))}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* KOSPI */}
+                        <div className={`p-2 rounded-lg border transition-all duration-150 ${kospiAsset.direction === 'UP' ? 'bg-emerald-950/25 border-emerald-500/40 text-emerald-300' : kospiAsset.direction === 'DOWN' ? 'bg-rose-950/25 border-rose-500/40 text-rose-300' : 'bg-slate-900 border-slate-800 text-slate-300'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[10px] text-white">🇰🇷 한국 주식</span>
+                            <span className={`text-[11px] font-black ${kospiAsset.score >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {kospiAsset.direction === 'UP' ? '▲' : kospiAsset.direction === 'DOWN' ? '▼' : '─'} {kospiAsset.score > 0 ? `+${kospiAsset.score}` : kospiAsset.score}pt
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold block truncate mt-0.5">{kospiAsset.badge}</span>
+                          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-150 rounded-full ${kospiAsset.score >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`}
+                              style={{ width: `${Math.min(100, Math.max(10, Math.abs(kospiAsset.score)))}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

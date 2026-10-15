@@ -12,6 +12,7 @@ import {
   calculateContinuousTransmission
 } from '../utils/macroUnifiedEngine';
 import { CustomVerticalFader } from './CustomVerticalFader';
+import { MobileCompactFaders } from './MobileCompactFaders';
 import { MacroFundamentalQuadrant } from './MacroFundamentalQuadrant';
 import { HistoricalTimelinePtController } from './HistoricalTimelinePtController';
 import { HighResTimelinePtController } from './HighResTimelinePtController';
@@ -116,6 +117,13 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
 
   // Continuous High-Res Time Series Index within the Active Era
   const [currentMonthlyIndex, setCurrentMonthlyIndex] = useState<number>(0);
+
+  // Mobile Fader Display Mode: 'compact' (one-screen linked sliders) vs 'faders' (large vertical DJ tracks)
+  const [mobileFaderMode, setMobileFaderMode] = useState<'compact' | 'faders'>('compact');
+
+  // Key Equity Assets for real-time causality display (Layer 2 ➔ Layer 3 connection)
+  const sp500Asset = useMemo(() => macro.assets.find(a => a.id === 'sp500'), [macro.assets]);
+  const kospiAsset = useMemo(() => macro.assets.find(a => a.id === 'kospi'), [macro.assets]);
 
   // Smooth scroll jumps to Lower Layers
   const scrollToLayer2 = () => {
@@ -384,7 +392,7 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
   const currentFxInfo = DETAILED_PHASE_INFO[fxDetailedPhase];
 
   return (
-    <div id="integrated-macro-cockpit" className="space-y-6">
+    <div id="integrated-macro-cockpit" className="space-y-3.5 sm:space-y-4">
       {/* ──────────────────────────────────────────────────────────
           HIGH-RESOLUTION HISTORICAL CRISIS & REGIME SHIFT TRAJECTORY PT
       ────────────────────────────────────────────────────────── */}
@@ -421,221 +429,337 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
         isSimulationMode={isPtSimActive}
         activeEraId={currentEraId}
         activeEraTitle={currentEra.shortTitle}
+        rateValue={rateValue}
+        liquidityValue={liquidityValue}
+        fxValue={fxValue}
+        sp500Asset={sp500Asset}
+        kospiAsset={kospiAsset}
       />
 
       {/* ──────────────────────────────────────────────────────────
           TRANSMISSION PIPELINE INDICATOR (원인 ➔ 전달 ➔ 결과)
       ────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-center gap-2 py-1 text-slate-500 font-mono text-xs">
-        <span className="flex items-center gap-1 text-indigo-400 font-bold">
-          [LAYER 1] 펀더멘털 상태
+      <div className="flex items-center justify-center gap-1.5 sm:gap-2 py-1 text-slate-500 font-mono text-[10px] sm:text-xs flex-wrap">
+        <span className="flex items-center gap-1 text-indigo-400 font-bold whitespace-nowrap">
+          [LAYER 1] 펀더멘털
         </span>
-        <ArrowRight className="w-3.5 h-3.5 text-slate-600" />
-        <span className="flex items-center gap-1 text-cyan-400 font-bold">
-          [LAYER 2] 3대 정책·유동성 전달계
+        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-600 shrink-0" />
+        <span className="flex items-center gap-1 text-cyan-400 font-bold whitespace-nowrap">
+          [LAYER 2] 3대 전달계
         </span>
-        <ArrowRight className="w-3.5 h-3.5 text-slate-600" />
-        <span className="flex items-center gap-1 text-emerald-400 font-bold">
-          [LAYER 3] 자산 변동성 파급
+        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-600 shrink-0" />
+        <span className="flex items-center gap-1 text-emerald-400 font-bold whitespace-nowrap">
+          [LAYER 3] 자산 파급
         </span>
       </div>
 
       {/* ──────────────────────────────────────────────────────────
-          LAYER 2: 3대 정책·유동성 전달계 콘솔 (트라이포드 페이더)
+          LAYER 2: 3대 정책·유동성 전달계 콘솔
       ────────────────────────────────────────────────────────── */}
-      <div id="layer2-transmission-console" className="scroll-mt-6 bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 shadow-xl space-y-4">
-        {/* Transmission Layer Header & Mode Switcher */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
-              <Sliders className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-[10px] font-mono font-bold tracking-wider text-cyan-400 uppercase">
-                LAYER 2 : TRANSMISSION ENGINE
-              </span>
-              <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
-                3대 정책·자금수급 제어 콘솔 (금리 × 유동성 × 환율)
-              </h3>
+      <div id="layer2-transmission-console" className="scroll-mt-6 space-y-2">
+        {/* MOBILE VIEW (Screens < md) */}
+        <div className="md:hidden space-y-2">
+          {/* Mobile Display Mode Switcher */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] font-mono text-cyan-400 font-bold tracking-wider uppercase">
+              LAYER 2 : 3대 정책·자금수급 제어
+            </span>
+            <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+              <button
+                type="button"
+                onClick={() => setMobileFaderMode('compact')}
+                className={`px-2 py-0.5 rounded font-bold transition cursor-pointer ${
+                  mobileFaderMode === 'compact'
+                    ? 'bg-cyan-500 text-slate-950 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                📱 한눈에 보기
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFaderMode('faders')}
+                className={`px-2 py-0.5 rounded font-bold transition cursor-pointer ${
+                  mobileFaderMode === 'faders'
+                    ? 'bg-cyan-500 text-slate-950 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🎚️ 세로 페이더
+              </button>
             </div>
           </div>
 
-          {/* Coupling Mode Selector */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-            <button
-              onClick={() => setCouplingMode('COUPLED')}
-              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition ${
-                couplingMode === 'COUPLED'
-                  ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="정방향 커플링: 금리 인상 시 달러 유동성 축소 & 원달러 환율 상승 동조"
-            >
-              <Link className="w-3 h-3" />
-              <span>정방향 동조 (기본)</span>
-            </button>
+          {/* Conditional Mobile View */}
+          {mobileFaderMode === 'compact' ? (
+            <MobileCompactFaders
+              rateValue={rateValue}
+              onRateChange={handleRateChange}
+              liquidityValue={liquidityValue}
+              onLiquidityChange={handleLiquidityChange}
+              fxValue={fxValue}
+              onFxChange={handleFxChange}
+              rateDetailedPhase={rateDetailedPhase}
+              fxDetailedPhase={fxDetailedPhase}
+              liquidityLabel={macro.liquidityLabel}
+              couplingMode={couplingMode}
+              setCouplingMode={setCouplingMode}
+              sp500Asset={sp500Asset}
+              kospiAsset={kospiAsset}
+              activeTimeSeries={activeTimeSeries}
+              currentMonthlyIndex={currentMonthlyIndex}
+              isPtSimActive={isPtSimActive}
+            />
+          ) : (
+            <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-3.5 shadow-xl space-y-3">
+              {/* Coupling Mode Selector for mobile when in fader view */}
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <span className="text-xs font-bold text-white">연동 방식 선택:</span>
+                <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[10px]">
+                  <button
+                    onClick={() => setCouplingMode('COUPLED')}
+                    className={`px-2 py-0.5 rounded font-bold ${couplingMode === 'COUPLED' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}
+                  >
+                    동조
+                  </button>
+                  <button
+                    onClick={() => setCouplingMode('DECOUPLED_INVERSE')}
+                    className={`px-2 py-0.5 rounded font-bold ${couplingMode === 'DECOUPLED_INVERSE' ? 'bg-rose-500 text-white' : 'text-slate-400'}`}
+                  >
+                    역행
+                  </button>
+                  <button
+                    onClick={() => setCouplingMode('INDEPENDENT')}
+                    className={`px-2 py-0.5 rounded font-bold ${couplingMode === 'INDEPENDENT' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}
+                  >
+                    개별
+                  </button>
+                </div>
+              </div>
 
-            <button
-              onClick={() => setCouplingMode('DECOUPLED_INVERSE')}
-              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition ${
-                couplingMode === 'DECOUPLED_INVERSE'
-                  ? 'bg-rose-500 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="역행 디커플링: 위기 시 패닉 금리인하와 환율 폭등 등 예외 상황"
-            >
-              <Zap className="w-3 h-3" />
-              <span>역행 디커플링</span>
-            </button>
-
-            <button
-              onClick={() => setCouplingMode('INDEPENDENT')}
-              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition ${
-                couplingMode === 'INDEPENDENT'
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="완전 독립 조작: 3개 조절 바를 각각 자유롭게 테스트"
-            >
-              <Unlink className="w-3 h-3" />
-              <span>개별 수동 조작</span>
-            </button>
-          </div>
+              {/* Vertical Faders Stack on Mobile */}
+              <div className="grid grid-cols-1 gap-3">
+                <CustomVerticalFader
+                  id="fader-rate-mob"
+                  title="① 미국 기준금리 (Fed Rate)"
+                  value={rateValue}
+                  min={0.00}
+                  max={7.00}
+                  step={0.25}
+                  formatValue={(v) => `${v.toFixed(2)}%`}
+                  phaseLabel={currentRateInfo.badge}
+                  accentColor="cyan"
+                  ticks={rateTicks}
+                  onChange={handleRateChange}
+                />
+                <CustomVerticalFader
+                  id="fader-liquidity-mob"
+                  title="② 달러 순유동성 (Net Liquidity)"
+                  value={liquidityValue}
+                  min={0.50}
+                  max={9.50}
+                  step={0.10}
+                  formatValue={(v) => `$${v.toFixed(1)}T`}
+                  phaseLabel={macro.liquidityLabel}
+                  accentColor="purple"
+                  ticks={liquidityTicks}
+                  onChange={handleLiquidityChange}
+                />
+                <CustomVerticalFader
+                  id="fader-fx-mob"
+                  title="③ 원/달러 환율 (USD/KRW)"
+                  value={fxValue}
+                  min={900}
+                  max={1650}
+                  step={10}
+                  formatValue={(v) => `${v.toLocaleString()}원`}
+                  phaseLabel={currentFxInfo.badge}
+                  accentColor="emerald"
+                  ticks={fxTicks}
+                  onChange={handleFxChange}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* 3 Physical Faders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Fader 1: 미국 기준금리 (Fed Rate) */}
-          <CustomVerticalFader
-            id="fader-rate"
-            title="① 미국 기준금리 (Fed Rate)"
-            value={rateValue}
-            min={0.00}
-            max={7.00}
-            step={0.25}
-            formatValue={(v) => `${v.toFixed(2)}%`}
-            phaseLabel={currentRateInfo.badge}
-            accentColor="cyan"
-            ticks={rateTicks}
-            onChange={handleRateChange}
-            sparklineData={isPtSimActive ? {
-              label: `${currentEra.shortTitle} 기준금리 궤적`,
-              history: activeTimeSeries.map(p => p.fedRate),
-              currentIndex: currentMonthlyIndex,
-              unit: '%'
-            } : undefined}
-          />
+        {/* DESKTOP VIEW (Screens >= md) */}
+        <div className="hidden md:block bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 shadow-xl space-y-4">
+          {/* Transmission Layer Header & Mode Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                <Sliders className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-wider text-cyan-400 uppercase">
+                  LAYER 2 : TRANSMISSION ENGINE
+                </span>
+                <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+                  3대 정책·자금수급 제어 콘솔 (금리 × 유동성 × 환율)
+                </h3>
+              </div>
+            </div>
 
-          {/* Fader 2: 달러 순유동성 & Fed 대차대조표/M2 */}
-          <CustomVerticalFader
-            id="fader-liquidity"
-            title="② 달러 순유동성 (M2/Fed Net Liquidity)"
-            value={liquidityValue}
-            min={0.50}
-            max={9.50}
-            step={0.10}
-            formatValue={(v) => `$${v.toFixed(1)}T`}
-            phaseLabel={macro.liquidityLabel}
-            accentColor="purple"
-            ticks={liquidityTicks}
-            onChange={handleLiquidityChange}
-            sparklineData={isPtSimActive ? {
-              label: `${currentEra.shortTitle} 순유동성 궤적`,
-              history: activeTimeSeries.map(p => p.netLiquidity),
-              currentIndex: currentMonthlyIndex,
-              unit: 'T'
-            } : undefined}
-          />
+            {/* Coupling Mode Selector */}
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+              <button
+                onClick={() => setCouplingMode('COUPLED')}
+                className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
+                  couplingMode === 'COUPLED'
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="정방향 커플링: 금리 인상 시 달러 유동성 축소 & 원달러 환율 상승 동조"
+              >
+                <Link className="w-3 h-3" />
+                <span>정방향 동조 (기본)</span>
+              </button>
 
-          {/* Fader 3: 원/달러 환율 (USD/KRW) */}
-          <CustomVerticalFader
-            id="fader-fx"
-            title="③ 원/달러 환율 (USD/KRW)"
-            value={fxValue}
-            min={900}
-            max={1650}
-            step={10}
-            formatValue={(v) => `${v.toLocaleString()}원`}
-            phaseLabel={currentFxInfo.badge}
-            accentColor="emerald"
-            ticks={fxTicks}
-            onChange={handleFxChange}
-            sparklineData={isPtSimActive ? {
-              label: `${currentEra.shortTitle} 환율 궤적`,
-              history: activeTimeSeries.map(p => p.usdkrw),
-              currentIndex: currentMonthlyIndex,
-              unit: '원'
-            } : undefined}
-          />
+              <button
+                onClick={() => setCouplingMode('DECOUPLED_INVERSE')}
+                className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
+                  couplingMode === 'DECOUPLED_INVERSE'
+                    ? 'bg-rose-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="역행 디커플링: 위기 시 패닉 금리인하와 환율 폭등 등 예외 상황"
+              >
+                <Zap className="w-3 h-3" />
+                <span>역행 디커플링</span>
+              </button>
+
+              <button
+                onClick={() => setCouplingMode('INDEPENDENT')}
+                className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
+                  couplingMode === 'INDEPENDENT'
+                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="완전 독립 조작: 3개 조절 바를 각각 자유롭게 테스트"
+              >
+                <Unlink className="w-3 h-3" />
+                <span>개별 수동 조작</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3 Physical Faders Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Fader 1: 미국 기준금리 (Fed Rate) */}
+            <CustomVerticalFader
+              id="fader-rate"
+              title="① 미국 기준금리 (Fed Rate)"
+              value={rateValue}
+              min={0.00}
+              max={7.00}
+              step={0.25}
+              formatValue={(v) => `${v.toFixed(2)}%`}
+              phaseLabel={currentRateInfo.badge}
+              accentColor="cyan"
+              ticks={rateTicks}
+              onChange={handleRateChange}
+            />
+
+            {/* Fader 2: 달러 순유동성 & Fed 대차대조표/M2 */}
+            <CustomVerticalFader
+              id="fader-liquidity"
+              title="② 달러 순유동성 (M2/Fed Net Liquidity)"
+              value={liquidityValue}
+              min={0.50}
+              max={9.50}
+              step={0.10}
+              formatValue={(v) => `$${v.toFixed(1)}T`}
+              phaseLabel={macro.liquidityLabel}
+              accentColor="purple"
+              ticks={liquidityTicks}
+              onChange={handleLiquidityChange}
+            />
+
+            {/* Fader 3: 원/달러 환율 (USD/KRW) */}
+            <CustomVerticalFader
+              id="fader-fx"
+              title="③ 원/달러 환율 (USD/KRW)"
+              value={fxValue}
+              min={900}
+              max={1650}
+              step={10}
+              formatValue={(v) => `${v.toLocaleString()}원`}
+              phaseLabel={currentFxInfo.badge}
+              accentColor="emerald"
+              ticks={fxTicks}
+              onChange={handleFxChange}
+            />
+          </div>
         </div>
       </div>
 
       {/* ──────────────────────────────────────────────────────────
           LAYER 3: 최종 시장 변동성 반응판 (Layer 3: Market Impact)
       ────────────────────────────────────────────────────────── */}
-      <div id="layer3-market-reaction-panel" className="scroll-mt-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div id="layer3-market-reaction-panel" className="scroll-mt-6 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
         {/* Market Asset Impact Cards (Col 7) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 shadow-xl">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+        <div className="lg:col-span-7 space-y-3 sm:space-y-4">
+          <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-3 sm:p-5 shadow-xl">
+            <div className="flex items-center justify-between pb-2 mb-2.5 sm:pb-3 sm:mb-4 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-                  <PieChart className="w-4 h-4" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+                  <PieChart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono font-bold tracking-wider text-emerald-400 uppercase">
+                  <span className="text-[9px] sm:text-[10px] font-mono font-bold tracking-wider text-emerald-400 uppercase">
                     LAYER 3 : ASSET REACTION
                   </span>
-                  <h3 className="text-sm font-extrabold text-white">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-white">
                     자산군별 실시간 변동성 및 수급 영향
                   </h3>
                 </div>
               </div>
-              <span className="text-xs font-mono text-slate-400">
+              <span className="text-[10px] sm:text-xs font-mono text-slate-400">
                 수급 압력: <b className="text-purple-400">{macro.liquidityLabel}</b>
               </span>
             </div>
 
-            {/* Asset Impact Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Asset Impact Grid: Compact 2-column mobile layout to view more mini graphs continuously */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {macro.assets.map((asset) => {
                 const isBullish = asset.direction === 'UP';
                 const isBearish = asset.direction === 'DOWN';
                 return (
                   <div
                     key={asset.id}
-                    className="p-3 bg-slate-950/70 rounded-xl border border-slate-850 hover:border-slate-750 transition flex flex-col justify-between space-y-2"
+                    className="p-2 sm:p-3 bg-slate-950/70 rounded-xl border border-slate-850 hover:border-slate-750 transition flex flex-col justify-between space-y-1.5 min-w-0"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs font-extrabold text-white">{asset.nameKr}</span>
-                        <span className="text-[10px] font-mono text-slate-500 ml-1.5">{asset.name}</span>
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
+                      <div className="min-w-0">
+                        <span className="text-[11px] sm:text-xs font-extrabold text-white truncate block">{asset.nameKr}</span>
+                        <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 hidden xs:inline">{asset.name}</span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-black font-mono flex items-center gap-0.5 ${
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[11px] font-black font-mono flex items-center gap-0.5 shrink-0 ${
                         isBullish 
                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
                           : isBearish
                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                           : 'bg-slate-800 text-slate-300 border border-slate-700'
                       }`}>
-                        {isBullish && <TrendingUp className="w-3 h-3" />}
-                        {isBearish && <TrendingDown className="w-3 h-3" />}
-                        {!isBullish && !isBearish && <Minus className="w-3 h-3" />}
+                        {isBullish && <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                        {isBearish && <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                        {!isBullish && !isBearish && <Minus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                         {asset.badge}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
+                    <p className="text-[10px] sm:text-[11px] text-slate-400 leading-tight line-clamp-1 sm:line-clamp-2">
                       {asset.summary}
                     </p>
 
-                    <div className="pt-1.5 border-t border-slate-850/60 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-                      <span>영향 강도 (Score)</span>
-                      <div className="flex items-center gap-1.5">
+                    <div className="pt-1 border-t border-slate-850/60 flex items-center justify-between text-[9px] sm:text-[10px] text-slate-500 font-mono">
+                      <span>강도</span>
+                      <div className="flex items-center gap-1">
                         <span className={asset.score > 0 ? 'text-emerald-400 font-bold' : asset.score < 0 ? 'text-rose-400 font-bold' : 'text-slate-400'}>
                           {asset.score > 0 ? `+${asset.score}` : asset.score}
                         </span>
-                        <div className="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div className="w-10 sm:w-14 bg-slate-800 h-1 sm:h-1.5 rounded-full overflow-hidden">
                           <div 
                             className={`h-full ${isBullish ? 'bg-emerald-400' : isBearish ? 'bg-rose-400' : 'bg-slate-400'}`}
                             style={{ width: `${Math.min(100, Math.max(10, Math.abs(asset.score)))}%` }}
@@ -644,12 +768,12 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Integrated Historical Trend Mini Sparkline for Key Asset Types (Shown during PT Simulation only) */}
-                    {isPtSimActive && asset.id === 'us_stock' && (
-                      <div className="pt-1 border-t border-slate-850/40">
-                        <div className="flex justify-between text-[9px] font-mono text-slate-400 mb-0.5">
-                          <span>S&P 500 시계열 궤적</span>
-                          <span className="text-amber-300 font-bold">{activeTimeSeries[currentMonthlyIndex]?.sp500Index}pt</span>
+                    {/* Integrated Historical Trend Mini Sparkline for Key Asset Types (Always clean & compact) */}
+                    {isPtSimActive && (asset.id === 'sp500' || asset.id === 'us_stock') && (
+                      <div className="pt-1.5 border-t border-slate-850/60 mt-1">
+                        <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 mb-0.5">
+                          <span className="text-slate-400">S&P 500 시계열</span>
+                          <span className="text-amber-300 font-bold">{activeTimeSeries[currentMonthlyIndex]?.sp500Index?.toLocaleString()}pt</span>
                         </div>
                         <MiniSparkline
                           data={activeTimeSeries.map(p => p.sp500Index)}
@@ -657,15 +781,32 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
                           color="amber"
                           unit="pt"
                           label="S&P 500"
-                          height={28}
+                          height={24}
                         />
                       </div>
                     )}
 
-                    {isPtSimActive && asset.id === 'crypto' && (
-                      <div className="pt-1 border-t border-slate-850/40">
-                        <div className="flex justify-between text-[9px] font-mono text-slate-400 mb-0.5">
-                          <span>비트코인(BTC) 시계열 궤적</span>
+                    {isPtSimActive && asset.id === 'kospi' && (
+                      <div className="pt-1.5 border-t border-slate-850/60 mt-1">
+                        <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 mb-0.5">
+                          <span className="text-slate-400">KOSPI 시계열</span>
+                          <span className="text-emerald-300 font-bold">{activeTimeSeries[currentMonthlyIndex]?.kospiIndex?.toLocaleString()}pt</span>
+                        </div>
+                        <MiniSparkline
+                          data={activeTimeSeries.map(p => p.kospiIndex)}
+                          currentIndex={currentMonthlyIndex}
+                          color="emerald"
+                          unit="pt"
+                          label="KOSPI"
+                          height={24}
+                        />
+                      </div>
+                    )}
+
+                    {isPtSimActive && (asset.id === 'crypto' || asset.id === 'bitcoin') && (
+                      <div className="pt-1.5 border-t border-slate-850/60 mt-1">
+                        <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 mb-0.5">
+                          <span className="text-slate-400">비트코인(BTC)</span>
                           <span className="text-orange-400 font-bold">${activeTimeSeries[currentMonthlyIndex]?.bitcoinPrice}K</span>
                         </div>
                         <MiniSparkline
@@ -674,15 +815,15 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
                           color="amber"
                           unit="K"
                           label="BTC/USD"
-                          height={28}
+                          height={24}
                         />
                       </div>
                     )}
 
-                    {isPtSimActive && asset.id === 'us_bond' && (
-                      <div className="pt-1 border-t border-slate-850/40">
-                        <div className="flex justify-between text-[9px] font-mono text-slate-400 mb-0.5">
-                          <span>미 10년물 국채수익률 궤적</span>
+                    {isPtSimActive && (asset.id === 'us_bond' || asset.id === 'treasury10y') && (
+                      <div className="pt-1.5 border-t border-slate-850/60 mt-1">
+                        <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 mb-0.5">
+                          <span className="text-slate-400">미 10년물 국채</span>
                           <span className="text-cyan-400 font-bold">{activeTimeSeries[currentMonthlyIndex]?.treasury10Y}%</span>
                         </div>
                         <MiniSparkline
@@ -691,16 +832,16 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
                           color="cyan"
                           unit="%"
                           label="US10Y"
-                          height={28}
+                          height={24}
                         />
                       </div>
                     )}
 
                     {isPtSimActive && asset.id === 'gold' && (
-                      <div className="pt-1 border-t border-slate-850/40">
-                        <div className="flex justify-between text-[9px] font-mono text-slate-400 mb-0.5">
-                          <span>국제 금(Gold) 시계열 궤적</span>
-                          <span className="text-yellow-400 font-bold">${activeTimeSeries[currentMonthlyIndex]?.goldPrice}</span>
+                      <div className="pt-1.5 border-t border-slate-850/60 mt-1">
+                        <div className="flex justify-between items-center text-[9px] font-mono text-slate-400 mb-0.5">
+                          <span className="text-slate-400">국제 금(Gold)</span>
+                          <span className="text-yellow-400 font-bold">${activeTimeSeries[currentMonthlyIndex]?.goldPrice?.toLocaleString()}</span>
                         </div>
                         <MiniSparkline
                           data={activeTimeSeries.map(p => p.goldPrice)}
@@ -708,7 +849,7 @@ export const IntegratedCockpitView: React.FC<IntegratedCockpitViewProps> = ({
                           color="amber"
                           unit="$"
                           label="Gold/USD"
-                          height={28}
+                          height={24}
                         />
                       </div>
                     )}
